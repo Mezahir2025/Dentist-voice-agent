@@ -1,0 +1,7 @@
+{
+  "name": "Stomatoloq Randevu Agenti",
+  "description": "Bakılı xanım operatoru ilə stomatoloji klinika üçün səslə vaxt təyin edən ağıllı sistem.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
