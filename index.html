@@ -4,9 +4,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Swarnim — Premium Stomatoloji Xidmət</title>
+    <title>Stom AI — Premium Stomatoloji Xidmət</title>
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3209/3209085.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        serif: ['Fraunces', 'serif'],
+                    },
+                    colors: {
+                        gold: {
+                            50: '#FBF9F3',
+                            100: '#F5F0E1',
+                            200: '#EBDDBF', // Champagne
+                            300: '#E0CA9D',
+                            400: '#D6B67B',
+                            500: '#C6A87C', // Main Gold
+                            600: '#AC8B58',
+                            700: '#8E6E3F',
+                            800: '#755836',
+                            900: '#4E3D2A',
+                        },
+                        navy: {
+                            50: '#ECEEF2',
+                            100: '#D5DAE3',
+                            200: '#B0B9C9',
+                            300: '#8A97AE',
+                            400: '#647593',
+                            500: '#3E5378',
+                            600: '#304161',
+                            700: '#23304A',
+                            800: '#151B2B',
+                            900: '#0B0F19', // Deepest Navy
+                            950: '#05070C'
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'glow': 'glow 3s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        glow: {
+                            'from': { boxShadow: '0 0 10px rgba(198, 168, 124, 0.1)' },
+                            'to': { boxShadow: '0 0 30px rgba(198, 168, 124, 0.4)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&display=swap"
         rel="stylesheet">

@@ -4,101 +4,51 @@
 
 ---
 
-### 📦 PAKET 1: BASIC
-**İdeal: Kiçik klinikalar və başlanğıc üçün**
+### 📦 PAKET 1: BASIC (Yazılı Asistent)
+**İdeal: Kiçik klinikalar və sadə başlanğıc üçün**
 
 | Xüsusiyyət | Məlumat |
 |-----------|---------|
 | 💰 **Quraşdırma Ödənişi** | **₼300** (birdəfəlik) |
 | 📅 **Aylıq Abunə** | **₼80/ay** |
-| ⏱️ **Minimum Müqavilə** | 6 ay |
 
 #### ✅ Daxildir:
-- ✓ Yazılı AI asistent (24/7 chat)
+- ✓ **Yazılı AI asistent** (Saytda canlı çat)
 - ✓ Avtomatik randevu qəbulu
-- ✓ Firebase hosting
-- ✓ Email support (2 iş günü)
-- ✓ Əsas analitika
-- ✓ 1 operator paneli
+- ✓ Dashboard (Admin Panel) girişi
+- ✓ Texniki dəstək
 
 #### ❌ Daxil deyil:
-- ✗ Səsli rejim
-- ✗ WhiteLabel branding
-- ✗ Google Calendar sync
-- ✗ Telefon support
-
-**İllik Xərc:** ₼1,260 (₼300 + ₼80×12)
+- ✗ **Səsli danışıq** (Mikrofonla)
+- ✗ WhatsApp/Instagram inteqrasiyası
 
 ---
 
-### 🌟 PAKET 2: PROFESSIONAL (⭐ Ən populyar)
-**İdeal: Orta və böyük klinikalar**
+### 🌟 PAKET 2: PROFESSIONAL (Səsli + Yazılı) ⭐
+**İdeal: Müasir klinikalar (Ən çox seçilən)**
 
 | Xüsusiyyət | Məlumat |
 |-----------|---------|
 | 💰 **Quraşdırma Ödənişi** | **₼500** (birdəfəlik) |
 | 📅 **Aylıq Abunə** | **₼120/ay** |
-| ⏱️ **Minimum Müqavilə** | 12 ay |
 
 #### ✅ Daxildir:
-- ✓ **Səsli + Yazılı AI asistent**
-- ✓ Avtomatik randevu qəbulu
-- ✓ **WhiteLabel branding** (öz logonuz, rəngləriniz)
-- ✓ Firebase hosting + CDN
-- ✓ **Telefon support** (24 saat)
-- ✓ Təfərrüatlı analitika
-- ✓ 3-ə qədər operator paneli
-- ✓ Vebsayta inteqrasiya dəstəyi
-- ✓ 1 saat texniki təlim
-
-#### ❌ Daxil deyil:
-- ✗ Google Calendar sync
-- ✗ Custom features
-- ✗ CRM inteqrasiyası
-
-**İllik Xərc:** ₼1,940 (₼500 + ₼120×12)  
-**Qənaət:** 6 ay üçün ₼200 endirim!
+- ✓ **Səsli AI Operator** (Canlı insan kimi danışır)
+- ✓ **Yazılı AI asistent**
+- ✓ Özəl Dashboard (Klinika üçün loqolu)
+- ✓ Prioritet texniki dəstək
+- ✓ Server və API xərcləri daxildir
 
 ---
 
-### 💎 PAKET 3: PREMIUM
-**İdeal: Premium klinikalar və multi-location**
+### 🧩 ƏLAVƏ MODULLAR (Add-ons)
+*Paketlərə əlavə olaraq seçilə bilər:*
 
-| Xüsusiyyət | Məlumat |
-|-----------|---------|
-| 💰 **Quraşdırma Ödənişi** | **₼800** (birdəfəlik) |
-| 📅 **Aylıq Abunə** | **₼150/ay** |
-| ⏱️ **Minimum Müqavilə** | 12 ay |
-
-#### ✅ Daxildir:
-- ✓ **Professional paketdəki hər şey**
-- ✓ **Google Calendar avtomatik sync**
-- ✓ **Analytics dashboard** (qrafiklər, hesabatlar)
-- ✓ **Priority support** (1 saat cavab)
-- ✓ 5-ə qədər operator paneli
-- ✓ **Custom feature development** (ayda 2 saata qədər)
-- ✓ CRM inteqrasiyası (əlavə ödəniş yoxdur)
-- ✓ Multi-location dəstəyi (3 filial)
-- ✓ 2 saat texniki təlim
-- ✓ Aylıq performans hesabatı
-
-**İllik Xərc:** ₼2,600 (₼800 + ₼150×12)  
-**Qənaət:** İllik ödənişdə 10% endirim = **₼2,340**
-
----
-
-## 🎁 ƏLAVƏ XİDMƏTLƏR
-
-| Xidmət | Qiymət |
-|--------|--------|
-| 🌐 Landing page dizaynı | ₼400 |
-| 📱 WhatsApp bot inteqrasiyası | ₼300 |
-| 📊 CRM inteqrasiyası (Bitrix24, Zoho) | ₼500 |
-| 🎨 Custom branding paketi | ₼200 |
-| 📞 Əlavə operator paneli (ayda) | ₼20/ay |
-| 🔧 Texniki məsləhət (1 saat) | ₼50 |
-| 📈 SEO optimallaşdırma | ₼600 |
-
+| Modul | Qiymət | Məlumat |
+|-------|--------|---------|
+| � **WhatsApp Botu** | + ₼30/ay | Müştəriləri WhatsApp-da cavablayır |
+| 📸 **Instagram Direct** | + ₼30/ay | Instagram 'Direct' mesajlarını cavablayır |
+| 🌐 **Landing Page** | ₼400 (birdəfəlik) | Klinika üçün sayt yoxdursa hazırlanır |
 ---
 
 ## 💡 ROI (Qazanc) HESABLAMASI

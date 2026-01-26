@@ -21,7 +21,7 @@ export interface ChatSession {
     lastMessage: string;
     lastMessageTime: any;
     createdAt: any;
-    status: 'active' | 'completed';
+    status: 'active' | 'completed' | 'waiting_for_doctor' | 'doctor_responding';
 }
 
 export interface ChatMessage {
@@ -114,10 +114,75 @@ export const ChatService = {
         });
     },
 
-    // 6. Sessiyanı sil
+    // 6. Sessiyanı sil (Mesajları ilə birlikdə)
     deleteSession: async (sessionId: string) => {
         try {
+            // Əvvəlcə mesajları sil
+            const messagesRef = collection(db, SESSIONS_COL, sessionId, 'messages');
+            const snapshot = await getDocs(messagesRef);
+            const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+            await Promise.all(deletePromises);
+
+            // Sonra sessiyanı sil
             await deleteDoc(doc(db, SESSIONS_COL, sessionId));
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Session delete error:", e); }
+    },
+
+    // 7. Bütün sessiyaları sil (Admin üçün)
+    deleteAllSessions: async () => {
+        try {
+            const q = query(collection(db, SESSIONS_COL));
+            const snapshot = await getDocs(q);
+
+            // Hər sessiya üçün deleteSession çağır (kiçik layihə üçün okdir)
+            const deletePromises = snapshot.docs.map(doc => ChatService.deleteSession(doc.id));
+            await Promise.all(deletePromises);
+        } catch (e) {
+            console.error("Error deleting all sessions:", e);
+        }
+    },
+
+    // 7.5. Tək mesajı sil
+    deleteMessage: async (sessionId: string, messageId: string) => {
+        try {
+            await deleteDoc(doc(db, SESSIONS_COL, sessionId, 'messages', messageId));
+        } catch (e) {
+            console.error("Error deleting message:", e);
+        }
+    },
+
+    // 8. Sessiyanın statusunu yenilə (Həkimlə danışmaq üçün)
+    updateSessionStatus: async (sessionId: string, status: 'active' | 'waiting_for_doctor' | 'doctor_responding') => {
+        try {
+            const sessionRef = doc(db, SESSIONS_COL, sessionId);
+            await updateDoc(sessionRef, { status });
+        } catch (error) {
+            console.error("Error updating session status:", error);
+        }
+    },
+
+    // 9. Həkim mesajı göndər
+    sendDoctorMessage: async (sessionId: string, text: string) => {
+        if (!sessionId || !text.trim()) return;
+        try {
+            // Mesajı 'doctor' speaker ilə yaz
+            const messagesRef = collection(db, SESSIONS_COL, sessionId, 'messages');
+            await addDoc(messagesRef, {
+                speaker: 'doctor' as Speaker,
+                text,
+                timestamp: Date.now(),
+                createdAt: serverTimestamp()
+            });
+
+            // Sessiyanın "Son Mesaj"ını və statusunu yenilə
+            const sessionRef = doc(db, SESSIONS_COL, sessionId);
+            await updateDoc(sessionRef, {
+                lastMessage: text,
+                lastMessageTime: serverTimestamp(),
+                status: 'doctor_responding'
+            });
+        } catch (error) {
+            console.error("Error sending doctor message:", error);
+        }
     }
 };

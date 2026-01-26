@@ -1,53 +1,73 @@
+/**
+ * Audio processing utilities for Gemini Live API
+ */
 
-export function decodeBase64(base64: string): Uint8Array {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
+export const AudioUtils = {
+  /**
+   * Resamples audio buffer to target sample rate (16kHz for Gemini)
+   */
+  resampleBuffer: (audioData: Float32Array, oldSampleRate: number, newSampleRate: number): Float32Array => {
+    if (oldSampleRate === newSampleRate) return audioData;
 
-export function encodeBase64(bytes: Uint8Array): string {
-  let binary = '';
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
+    const ratio = oldSampleRate / newSampleRate;
+    const newLength = Math.round(audioData.length / ratio);
+    const result = new Float32Array(newLength);
 
-export async function decodeAudioData(
-  data: Uint8Array,
-  ctx: AudioContext,
-  sampleRate: number,
-  numChannels: number,
-): Promise<AudioBuffer> {
-  // Use a faster way to access the Int16Array data
-  const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.byteLength / 2);
-  const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+    let offsetResult = 0;
+    let offsetSource = 0;
 
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    // Optimized loop for conversion from Int16 to Float32
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+    while (offsetResult < newLength) {
+      const nextOffsetSource = Math.round((offsetResult + 1) * ratio);
+      let accum = 0, count = 0;
+
+      for (let i = offsetSource; i < nextOffsetSource && i < audioData.length; i++) {
+        accum += audioData[i];
+        count++;
+      }
+
+      result[offsetResult] = count > 0 ? accum / count : 0;
+      offsetResult++;
+      offsetSource = nextOffsetSource;
     }
-  }
-  return buffer;
-}
 
-export function createPcmBlob(data: Float32Array): { data: string; mimeType: string } {
-  const l = data.length;
-  const int16 = new Int16Array(l);
-  for (let i = 0; i < l; i++) {
-    const s = Math.max(-1, Math.min(1, data[i]));
-    int16[i] = s < 0 ? s * 32768 : s * 32767;
+    return result;
+  },
+
+  /**
+   * Converts Float32Array (web audio) to Int16Array (PCM16)
+   */
+  floatTo16BitPCM: (float32Array: Float32Array): Int16Array => {
+    const int16Array = new Int16Array(float32Array.length);
+    for (let i = 0; i < float32Array.length; i++) {
+      const s = Math.max(-1, Math.min(1, float32Array[i]));
+      int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+    return int16Array;
+  },
+
+  /**
+   * Converts Int16Array to Base64 (for WebSocket transmission)
+   */
+  arrayBufferToBase64: (buffer: ArrayBuffer): string => {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+  },
+
+  /**
+   * Converts Base64 string back to ArrayBuffer (for playback)
+   */
+  base64ToArrayBuffer: (base64: string): ArrayBuffer => {
+    const binaryString = window.atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
   }
-  return {
-    data: encodeBase64(new Uint8Array(int16.buffer)),
-    mimeType: 'audio/pcm;rate=16000',
-  };
-}
+};

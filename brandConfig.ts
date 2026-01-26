@@ -1,8 +1,8 @@
 
 export const BRAND_CONFIG = {
-    name: "Swarnim",
-    slogan: "Özünəinamlı Gülüşə Aparan Yolunuz Burada Başlayır.",
-    description: "Rahatlığınız üçün nəzərdə tutulmuş dünya səviyyəli stomatoloji xidməti təcrübə edin. Ən yaxşı gülüşünüzü üzə çıxarmaq üçün müasir texnologiyanı zərif toxunuşla birləşdiririk.",
+    name: "Stom AI",
+    slogan: "Gələcəyin Stomatologiyası, Bu Gün.",
+    description: "Süni İntellekt (AI) dəstəkli ilk stomatoloji klinika təcrübəsi. Bizimlə həm vaxtınıza, həm də təbəssümünüzə dəyər verin.",
 
     // Design System
     colors: {
@@ -15,9 +15,9 @@ export const BRAND_CONFIG = {
     },
 
     contact: {
-        address: "186 Dental Way, Los Angeles, CA 90024",
-        phone: "(310) 555-0187",
-        email: "info@swarnim.com",
+        address: "Nizami küç. 142, Bakı, Azərbaycan",
+        phone: "+994 50 123 45 67",
+        email: "info@stom-ai.az",
         social: {
             facebook: "#",
             instagram: "#",

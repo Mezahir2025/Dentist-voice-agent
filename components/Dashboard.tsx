@@ -1,14 +1,16 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Stethoscope, LogOut, MessageCircle,
   Plus, Clock, Bell, ChevronLeft, ChevronRight, MoreHorizontal, Menu,
   Calendar as CalendarIcon, MessageSquare, X, Search, Send, Paperclip,
-  Check, User, Filter, LayoutGrid, List, Activity, Users, CalendarCheck
+  Check, User, Filter, LayoutGrid, List, Activity, Users, CalendarCheck, Sparkles
 } from 'lucide-react';
 import { Appointment, Speaker } from '../types';
 import { ChatService, ChatMessage } from '../services/chatService';
 import { BRAND_CONFIG } from '../brandConfig';
+import ConfirmModal from './ConfirmModal';
+import NotificationDropdown from './NotificationDropdown';
 
 interface DashboardProps {
   currentUser: any;
@@ -16,6 +18,8 @@ interface DashboardProps {
   onLogout: () => void;
   onUpdateStatus: (id: string, status: 'confirmed' | 'cancelled') => void;
   onOpenVoiceWidget: () => void;
+  onOpenManualBooking: () => void;
+  onDeleteAll: () => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
@@ -23,7 +27,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   appointments,
   onLogout,
   onUpdateStatus,
-  onOpenVoiceWidget
+  onOpenVoiceWidget,
+  onOpenManualBooking,
+  onDeleteAll
 }) => {
   const [activeTab, setActiveTab] = useState<'appointments' | 'chat'>('appointments');
   const [viewDate, setViewDate] = useState(new Date());
@@ -31,38 +37,183 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Multi-session chat stats
-  const [sessions, setSessions] = useState<any[]>([]); // ChatSession[]
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Confirm modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
 
-  // 1. Bütün sessiyaları (xəstələri) yüklə
+  // Notification state
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [readNotifications, setReadNotifications] = useState<Set<string>>(new Set());
+  const [lastAppointmentCount, setLastAppointmentCount] = useState(0);
+  const [lastSessionCount, setLastSessionCount] = useState(0);
+
+  // Multi-session chat stats
+  const [sessions, setSessions] = React.useState<any[]>([]);
+  const [activeSessionId, setActiveSessionId] = React.useState<string | null>(null);
+  const [messages, setMessages] = React.useState<ChatMessage[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Subscribe to sessions and messages
   React.useEffect(() => {
-    const unsubscribe = ChatService.subscribeToAllSessions((newSessions) => {
-      setSessions(newSessions);
-      // İlk dəfə yüklənəndə və ya sessiya yoxdursa, birincini seçə bilərik (optional)
+    const unsubscribeSessions = ChatService.subscribeToAllSessions((allSessions) => {
+      setSessions(allSessions);
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribeSessions();
+    };
   }, []);
 
-  // 2. Seçilmiş sessiyanın mesajlarını yüklə
   React.useEffect(() => {
-    if (activeSessionId) {
-      const unsubscribe = ChatService.subscribeToSessionMessages(activeSessionId, setMessages);
-      return () => unsubscribe();
-    } else {
+    if (!activeSessionId) {
       setMessages([]);
+      return;
     }
+
+    const unsubscribeMessages = ChatService.subscribeToSessionMessages(activeSessionId, (msgs) => {
+      setMessages(msgs);
+    });
+
+    return () => {
+      unsubscribeMessages();
+    };
   }, [activeSessionId]);
 
+  // Auto-scroll to bottom when messages change or session changes
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, activeSessionId]);
+
   const handleDeleteSession = async () => {
-    if (activeSessionId && window.confirm("Bu söhbəti silmək istədiyinizə əminsiniz?")) {
-      await ChatService.deleteSession(activeSessionId);
-      setActiveSessionId(null);
+    if (!activeSessionId) return;
+    setConfirmModal({
+      isOpen: true,
+      title: 'Söhbəti sil',
+      message: 'Bu söhbəti silmək istədiyinizə əminsiniz? Bu əməliyyatı geri qaytarmaq mümkün olmayacaq.',
+      onConfirm: async () => {
+        await ChatService.deleteSession(activeSessionId);
+        setActiveSessionId(null);
+        setConfirmModal({ ...confirmModal, isOpen: false });
+      }
+    });
+  };
+
+  const [doctorMessage, setDoctorMessage] = React.useState('');
+  const handleSendDoctorMessage = async () => {
+    if (!activeSessionId || !doctorMessage.trim()) return;
+    await ChatService.sendDoctorMessage(activeSessionId, doctorMessage);
+    setDoctorMessage('');
+  };
+
+  const handleDeleteMessage = async (msgId: string) => {
+    if (!activeSessionId) return;
+    setConfirmModal({
+      isOpen: true,
+      title: 'Mesajı sil',
+      message: 'Bu mesajı silmək istəyirsiniz?',
+      onConfirm: async () => {
+        await ChatService.deleteMessage(activeSessionId, msgId);
+        setConfirmModal({ ...confirmModal, isOpen: false });
+      }
+    });
+  };
+
+  // Count sessions waiting for doctor
+  const waitingForDoctorCount = sessions.filter(s => s.status === 'waiting_for_doctor').length;
+
+  const selectedSession = sessions.find(s => s.id === activeSessionId);
+
+  // Generate notifications
+  const notifications = useMemo(() => {
+    const notifs: any[] = [];
+
+    // New pending appointments
+    appointments
+      .filter(a => a.status === 'pending')
+      .slice(0, 5)
+      .forEach(app => {
+        const id = `app-${app.id}`;
+        notifs.push({
+          id,
+          type: 'appointment',
+          title: 'Yeni randevu',
+          message: `${app.patientName} - ${app.reason}`,
+          time: app.createdAt ? new Date(app.createdAt.seconds * 1000).toLocaleString('az-AZ', {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+          }) : 'İndi',
+          isRead: readNotifications.has(id)
+        });
+      });
+
+    // Messages waiting for doctor
+    sessions
+      .filter(s => s.status === 'waiting_for_doctor')
+      .slice(0, 5)
+      .forEach(session => {
+        const id = `msg-${session.id}`;
+        notifs.push({
+          id,
+          type: 'message',
+          title: 'Yeni mesaj',
+          message: `${session.patientName} həkimlə danışmaq istəyir`,
+          time: session.lastMessageTime ? new Date(session.lastMessageTime.seconds * 1000).toLocaleString('az-AZ', {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+          }) : 'İndi',
+          isRead: readNotifications.has(id)
+        });
+      });
+
+    return notifs.sort((a, b) => {
+      if (a.isRead === b.isRead) return 0;
+      return a.isRead ? 1 : -1;
+    });
+  }, [appointments, sessions, readNotifications]);
+
+  const unreadNotificationCount = notifications.filter(n => !n.isRead).length;
+
+  const handleMarkAsRead = (id: string) => {
+    setReadNotifications(prev => new Set([...prev, id]));
+  };
+
+  const handleMarkAllAsRead = () => {
+    setReadNotifications(new Set(notifications.map(n => n.id)));
+  };
+
+  const handleNotificationClick = (notification: any) => {
+    if (notification.type === 'appointment') {
+      setActiveTab('appointments');
+      setIsNotificationOpen(false);
+    } else if (notification.type === 'message') {
+      setActiveTab('chat');
+      const sessionId = notification.id.replace('msg-', '');
+      setActiveSessionId(sessionId);
+      setIsNotificationOpen(false);
+      // Scroll to messages tab to ensure it's visible
+      setTimeout(() => {
+        const messagesTab = document.querySelector('[data-tab="chat"]');
+        messagesTab?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
     }
   };
 
-  const selectedSession = sessions.find(s => s.id === activeSessionId);
+  const handleViewAllNotifications = () => {
+    // Show all sessions in chat tab
+    setActiveTab('chat');
+    setActiveSessionId(null); // Deselect any active session to show list
+    setIsNotificationOpen(false);
+  };
 
   // Statistics
   const stats = useMemo(() => {
@@ -163,13 +314,51 @@ const Dashboard: React.FC<DashboardProps> = ({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input type="text" placeholder="Axtar..." className="w-full bg-slate-50 border border-slate-200 rounded-full py-2.5 pl-10 pr-4 text-sm font-medium outline-none focus:bg-white focus:border-emerald-500 transition-all" />
             </div>
-            <button className="relative p-2 text-slate-400 hover:text-emerald-600 transition-colors bg-slate-50 rounded-full hover:bg-emerald-50">
-              <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
-            </button>
-            <button onClick={onOpenVoiceWidget} className="bg-emerald-500 text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-lg shadow-emerald-500/20 flex items-center gap-2 hover:bg-emerald-600 active:scale-95 transition-all">
-              <Plus size={18} /> <span className="hidden sm:inline">Yeni Randevu</span>
-            </button>
+
+            {/* Notification Bell */}
+            <div className="relative">
+              <button
+                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                className="relative p-2 text-slate-400 hover:text-emerald-600 transition-colors bg-slate-50 rounded-full hover:bg-emerald-50"
+              >
+                <Bell size={20} />
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30 animate-pulse">
+                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                  </span>
+                )}
+              </button>
+
+              <NotificationDropdown
+                isOpen={isNotificationOpen}
+                onClose={() => setIsNotificationOpen(false)}
+                notifications={notifications}
+                onMarkAsRead={handleMarkAsRead}
+                onMarkAllAsRead={handleMarkAllAsRead}
+                onNotificationClick={handleNotificationClick}
+                onViewAll={handleViewAllNotifications}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onOpenVoiceWidget}
+                className="bg-white text-emerald-600 border border-emerald-200 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm hover:bg-emerald-50 transition-all flex items-center gap-2"
+                title="AI Asistenti Aç"
+              >
+                <Sparkles size={16} className="text-emerald-500" />
+                <span className="hidden sm:inline">AI Asistent</span>
+              </button>
+
+              <button
+                onClick={onOpenManualBooking}
+                className="bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-lg shadow-emerald-500/20 flex items-center gap-2 hover:bg-emerald-600 active:scale-95 transition-all"
+              >
+                <Plus size={18} />
+                <span className="hidden sm:inline">Yeni Randevu</span>
+              </button>
+            </div>
+
           </div>
         </header>
 
@@ -238,6 +427,26 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <LayoutGrid size={18} />
                   </button>
                 </div>
+                {currentUser?.email === 'admin@stomai.az' || true ? ( // Show for everyone for now since it's personal
+                  <button
+                    onClick={() => {
+                      setConfirmModal({
+                        isOpen: true,
+                        title: 'Bütün randevuları sil',
+                        message: 'DİQQƏT: Bütün randevular silinəcək! Bu əməliyyatı geri qaytarmaq mümkün deyil.\n\nDavam etmək istəyirsiniz?',
+                        onConfirm: () => {
+                          onDeleteAll();
+                          setConfirmModal({ ...confirmModal, isOpen: false });
+                        }
+                      });
+                    }}
+                    className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors ml-auto group relative"
+                    title="Hamısını Sil"
+                  >
+                    <LogOut size={18} />
+                    <span className="absolute right-0 top-full mt-1 w-max px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Hamısını Sil</span>
+                  </button>
+                ) : null}
               </div>
 
               {/* Appointments List/Grid */}
@@ -260,7 +469,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                             <td className="py-5 px-6">
                               <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm uppercase">
-                                  {app.patientName[0]}
+                                  {app.patientName?.[0] || 'X'}
                                 </div>
                                 <div>
                                   <p className="font-bold text-slate-900 text-sm">{app.patientName}</p>
@@ -271,10 +480,16 @@ const Dashboard: React.FC<DashboardProps> = ({
                             <td className="py-5 px-6">
                               <div className="flex flex-col">
                                 <span className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                  <CalendarIcon size={14} className="text-slate-400" /> {app.date}
+                                  <CalendarIcon size={14} className="text-slate-400" />
+                                  {typeof app.date === 'object' && app.date?.seconds
+                                    ? new Date(app.date.seconds * 1000).toLocaleDateString('az-AZ')
+                                    : String(app.date || '')}
                                 </span>
                                 <span className="text-xs text-slate-400 flex items-center gap-2 mt-1">
-                                  <Clock size={14} /> {app.time}
+                                  <Clock size={14} />
+                                  {typeof app.time === 'object' && app.time?.seconds
+                                    ? new Date(app.time.seconds * 1000).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })
+                                    : String(app.time || '')}
                                 </span>
                               </div>
                             </td>
@@ -338,7 +553,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-600 font-bold text-lg uppercase">
-                            {app.patientName[0]}
+                            {app.patientName?.[0] || 'X'}
                           </div>
                           <div>
                             <h3 className="font-bold text-slate-900 text-lg">{app.patientName}</h3>
@@ -353,13 +568,21 @@ const Dashboard: React.FC<DashboardProps> = ({
                           <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
                             <CalendarIcon size={16} />
                           </div>
-                          <span className="font-semibold">{app.date}</span>
+                          <span className="font-semibold">
+                            {typeof app.date === 'object' && app.date?.seconds
+                              ? new Date(app.date.seconds * 1000).toLocaleDateString('az-AZ')
+                              : String(app.date || '')}
+                          </span>
                         </div>
                         <div className="flex items-center gap-3 text-sm text-slate-600">
                           <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
                             <Clock size={16} />
                           </div>
-                          <span className="font-semibold">{app.time}</span>
+                          <span className="font-semibold">
+                            {typeof app.time === 'object' && app.time?.seconds
+                              ? new Date(app.time.seconds * 1000).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })
+                              : String(app.time || '')}
+                          </span>
                         </div>
                         <div className="flex items-center gap-3 text-sm text-slate-600">
                           <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
@@ -387,7 +610,28 @@ const Dashboard: React.FC<DashboardProps> = ({
               {/* Chat Sidebar - Sessiyalar Siyahısı */}
               <div className={`w-full lg:w-80 bg-white border-r border-slate-100 flex flex-col min-h-0 ${activeSessionId ? 'hidden lg:flex' : 'flex'}`}>
                 <div className="p-4 md:p-6 border-b border-slate-50">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Mesajlar</h2>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Mesajlar</h2>
+                    {currentUser?.email === 'admin@stomai.az' || true ? (
+                      <button
+                        onClick={async () => {
+                          setConfirmModal({
+                            isOpen: true,
+                            title: 'Bütün mesajları sil',
+                            message: 'DİQQƏT: Bütün mesajlaşma tarixçəsi silinəcək!\n\nDavam etmək istəyirsiniz?',
+                            onConfirm: async () => {
+                              await ChatService.deleteAllSessions();
+                              setConfirmModal({ ...confirmModal, isOpen: false });
+                            }
+                          });
+                        }}
+                        className="text-[10px] text-rose-400 hover:text-rose-600 font-bold uppercase tracking-wider hover:underline"
+                        title="Bütün söhbətləri sil"
+                      >
+                        Hamısını Sil
+                      </button>
+                    ) : null}
+                  </div>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                     <input type="text" placeholder="Axtar..." className="w-full bg-slate-50 border-none rounded-xl py-3 pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all" />
@@ -407,6 +651,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xs uppercase bg-emerald-500`}>
                             {session.patientName?.[0] || 'A'}
                           </div>
+                          {session.status === 'waiting_for_doctor' && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center mb-1">
@@ -454,21 +701,72 @@ const Dashboard: React.FC<DashboardProps> = ({
                           <p className="text-xs font-bold uppercase tracking-wider">Hələ ki, yazışma yoxdur</p>
                         </div>
                       ) : (
-                        messages.map((msg) => (
-                          <div key={msg.id} className={`flex ${msg.speaker === Speaker.Agent ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[70%] p-4 rounded-2xl shadow-sm border ${msg.speaker === Speaker.Agent
-                              ? 'bg-emerald-500 text-white rounded-tr-none shadow-emerald-500/20 border-emerald-500'
-                              : 'bg-white text-slate-700 rounded-tl-none border-slate-100'
+                        messages
+                          .filter(msg => {
+                            // Filter out internal thoughts but keep doctor messages
+                            const isInternalThought = msg.text.startsWith('**') || msg.text.includes('Crafting Initial Response');
+                            return !isInternalThought;
+                          })
+                          .map((msg) => (
+                            <div key={msg.id} className={`flex ${msg.speaker === Speaker.Agent || msg.speaker === Speaker.Doctor || msg.speaker === 'doctor' ? 'justify-end' : 'justify-start'
                               }`}>
-                              <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
-                              <span className={`text-[10px] font-bold mt-2 block ${msg.speaker === Speaker.Agent ? 'text-emerald-100/70 text-right' : 'text-slate-300'
+                              <div className={`max-w-[70%] p-4 rounded-2xl shadow-sm border relative group/msg ${msg.speaker === Speaker.Agent
+                                ? 'bg-emerald-500 text-white rounded-tr-none shadow-emerald-500/20 border-emerald-500'
+                                : msg.speaker === Speaker.Doctor || msg.speaker === 'doctor'
+                                  ? 'bg-blue-500 text-white rounded-tr-none shadow-blue-500/20 border-blue-500'
+                                  : 'bg-white text-slate-700 rounded-tl-none border-slate-100'
                                 }`}>
-                                {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' }) : ''}
-                              </span>
+                                {/* Message Delete Button */}
+                                {msg.id && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteMessage(msg.id!);
+                                    }}
+                                    className={`absolute -top-2 -right-2 p-1 rounded-full bg-white shadow-md border border-slate-100 text-rose-500 opacity-0 group-hover/msg:opacity-100 transition-opacity z-10 hover:bg-rose-50`}
+                                    title="Mesajı sil"
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                )}
+
+                                {(msg.speaker === Speaker.Doctor || msg.speaker === 'doctor') && (
+                                  <p className="text-[10px] font-bold mb-1 opacity-70 uppercase">Həkim</p>
+                                )}
+                                <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
+                                <span className={`text-[10px] font-bold mt-2 block ${msg.speaker === Speaker.Agent ? 'text-emerald-100/70 text-right' :
+                                  msg.speaker === Speaker.Doctor || msg.speaker === 'doctor' ? 'text-blue-100/70 text-right' :
+                                    'text-slate-300'
+                                  }`}>
+                                  {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        ))
+                          ))
                       )}
+                      <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Doctor Input */}
+                    <div className="px-8 py-4 bg-white border-t border-slate-100 shrink-0">
+                      <div className="flex gap-3">
+                        <input
+                          type="text"
+                          value={doctorMessage}
+                          onChange={(e) => setDoctorMessage(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleSendDoctorMessage()}
+                          placeholder="Həkim olaraq mesaj yazın..."
+                          className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <button
+                          onClick={handleSendDoctorMessage}
+                          disabled={!doctorMessage.trim()}
+                          className="px-6 py-3 bg-blue-500 text-white rounded-xl font-bold text-sm hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          <Send size={16} />
+                          Göndər
+                        </button>
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -484,6 +782,16 @@ const Dashboard: React.FC<DashboardProps> = ({
           )}
         </div>
       </main>
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        variant="danger"
+      />
     </div>
   );
 };

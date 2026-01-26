@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { auth } from '../firebase';
 // Fix: Ensure modular named exports are correctly imported from firebase/auth
-import { 
-  signInWithEmailAndPassword, 
+import {
+  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  updateProfile 
+  updateProfile
 } from 'firebase/auth';
 import { Stethoscope, Mail, Lock, User, ArrowRight, Loader2, AlertCircle, X } from 'lucide-react';
 
@@ -42,8 +42,11 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose, onAuthSuccess }) => {
         onClose();
       }
     } catch (err: any) {
-      setError(err.message.includes('auth/invalid-credential') 
-        ? "E-poçt və ya şifrə yanlışdır." 
+      console.error('❌ Auth Error:', err);
+      console.error('❌ Code:', err.code);
+      console.error('❌ Message:', err.message);
+      setError(err.message.includes('auth/invalid-credential')
+        ? "E-poçt və ya şifrə yanlışdır."
         : "Xəta baş verdi: " + err.message);
     } finally {
       setLoading(false);
@@ -53,7 +56,7 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose, onAuthSuccess }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
       <div className="w-full max-w-md bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden relative animate-in zoom-in-95 duration-500">
-        <button 
+        <button
           onClick={onClose}
           className="absolute top-8 right-8 p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 hover:text-slate-900"
         >
@@ -65,7 +68,7 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose, onAuthSuccess }) => {
             <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-teal-600/20">
               <Stethoscope className="w-6 h-6" />
             </div>
-            <span className="font-bold text-xl tracking-tight uppercase text-slate-800">Celestia</span>
+            <span className="font-bold text-xl tracking-tight uppercase text-slate-800">Stom AI</span>
           </div>
 
           <div className="text-center mb-8">
@@ -88,9 +91,9 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose, onAuthSuccess }) => {
             {!isLogin && (
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                <input 
-                  type="text" 
-                  placeholder="Ad və Soyad" 
+                <input
+                  type="text"
+                  placeholder="Ad və Soyad"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -100,9 +103,9 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose, onAuthSuccess }) => {
             )}
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-              <input 
-                type="email" 
-                placeholder="E-poçt ünvanı" 
+              <input
+                type="email"
+                placeholder="E-poçt ünvanı"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -111,9 +114,9 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose, onAuthSuccess }) => {
             </div>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-              <input 
-                type="password" 
-                placeholder="Şifrə" 
+              <input
+                type="password"
+                placeholder="Şifrə"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -121,8 +124,8 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose, onAuthSuccess }) => {
               />
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl shadow-slate-900/10 hover:bg-slate-800 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 mt-2"
             >
@@ -136,7 +139,7 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose, onAuthSuccess }) => {
           </form>
 
           <div className="mt-6 text-center">
-            <button 
+            <button
               onClick={() => setIsLogin(!isLogin)}
               className="text-xs font-bold text-slate-400 hover:text-teal-600 transition-colors"
             >

@@ -12,31 +12,33 @@ Bu sənəd sizin ayda **10,000 AZN** təmiz gəlirə çatmağınız üçün laz�
 
 ---
 
-## 2. Satış Hunisi (Sales Funnel) - "Ehtimallar Nəzəriyyəsi"
+## 2. Satış Hunisi (Real WhatsApp Strategiyası)
 
-Hədəfə çatmaq üçün hər gün nə qədər iş görməli olduğunuzu bu rəqəmlər müəyyən edir (Ortalama konversiya):
+Siz hər gün seçilmiş 10 həkimə yazırsınız. WhatsApp-ın cavab faizi (Open Rate) zəngdən qat-qat yüksəkdir.
 
-- **100 Kontakt:** Soyuq zəng, Instagram mesajı və ya email.
-- **10 Görüş/Demo:** Real maraq göstərib sistemi canlı görmək istəyənlər.
-- **1 Satış:** Müqavilə bağlayan klinika.
+**Sizin "10-lar" Qanunu:**
+- **10 Mesaj (Günlük):** Hədəfli, şablonla yox, adla müraciət.
+- **2-3 Cavab:** "Maraqlıdır", "Bu nədir?", "Qiymət?" (20-30% reaksiya).
+- **1 Demo:** Sayta girib mikrofonla danışır.
+- **Həftəlik Nəticə:** 50 Mesaj -> 5 Demo -> **1 Satış**.
 
-**Nəticə:** Hər **100 kontakt** sizə **1 satış** gətirir.
+**Nəticə:** Bu temp ilə siz hər **həftə 1 klinika** bağlaya bilərsiniz.
 
 ---
 
 ## 3. Günlük və Həftəlik Plan (İş Rejimi)
 
-Ayda **10,000 AZN** qazanmaq üçün ayda min. **15 yeni klinika** bağlamaq lazımdır.
+Ayda **4-5 yeni klinika** bağlamaq üçün sadə plan:
 
-### Günlük Tapşırıq (Bazar ertəsi - Cümə):
-- **40 Yeni Kontakt:** Instagram, Google Maps və ya klinika siyahıları üzrə mesaj/zəng.
-- **4 Canlı/Online Demo:** Hazırladığımız proqramı klinika administratoruna və ya sahibinə göstərmək.
-- **Məqsəd:** Hər 2 gündə 1 satış bağlamaq.
+### 📅 Günlük Rejim (Cəmi 1 saat vaxt):
+1.  **Prospecting (15 dəq):** Instagram-da və ya Google Maps-də 10 yeni stomatoloq tapın. Nömrələrini qeyd edin.
+2.  **Mesajlaşma (15 dəq):** Hazır şablonlardan istifadə edərək onlara WhatsApp-da yazın (Adı dəyişməyi unutmayın!).
+3.  **Follow-up (15 dəq):** Dünən yazıb cavab verməyənlərə "xatırlatma" (".") atın və ya Demo linkini təkrar göndərin.
+4.  **Closing (15 dəq):** Maraqlananlara qiymət göndərin və ya zəng edib bağlayın.
 
-### Həftəlik Nəticə:
-- 200 Kontakt
-- 20 Demo
-- **3-4 Satış**
+### 🎯 Həftəlik Hədəf:
+- **50 Yeni Həkimə** təklif getməlidir.
+- **Minimum 1 Satış** (Professional Paket).
 
 ---
 
@@ -54,23 +56,36 @@ Ayda **10,000 AZN** qazanmaq üçün ayda min. **15 yeni klinika** bağlamaq laz
 
 ---
 
-## 5. 10,000 AZN Passiv Gəlir (Final Məqsəd)
+## 5. REAL XƏRCLƏR VƏ MƏNFƏƏT (Sizin Biznesiniz)
 
-Heç bir yeni satış etmədən, yalnız sistemin işləməsi ilə aylıq 10,000 AZN qazanmaq üçün:
-- **Lazım olan klinika sayı:** 84 klinika
-- **Hesablama:** 84 x ₼120 = **₼10,080**
+Çox vacibdir ki, xərclərinizi biləsiniz. Bizim istifadə etdiyimiz texnologiyalar (**Gemini 2.5 Flash**) sayəsində maya dəyəri inanılmaz dərəcədə aşağıdır.
+
+### 📉 1 Klinika üçün Aylıq Maya Dəyəri:
+*(Ssenari: 50 pasiyent, hərəsi 3 dəqiqə danışır)*
+
+| Xərc Mənbəyi | Təxmini Məbləğ |
+|--------------|----------------|
+| **Google Gemini API** | ~2.50 ₼ (Səs+Mətn) |
+| **Server (n8n)** | ~0.50 ₼ (Paylaşılan) |
+| **Firebase Hosting** | 0.00 ₼ (Free Tier) |
+| **Domen/SSL** | ~1.50 ₼ |
+| **CƏMİ XƏRC:** | **~4.50 ₼ / ay** |
+
+### 💰 Sizin Təmiz Qazancınız:
+
+**Professional Paket (Endirimli 60₼ olsa belə):**
+- Gəlir: **60.00 ₼**
+- Xərc: **4.50 ₼**
+- **TƏMİZ MƏNFƏƏT:** **55.50 ₼ (92% Marja!)** 🚀
+
+**Nəticə:** Müştəridən aldığınız abunə haqqının demək olar ki, **hamısı** sizin cibinizə qalır. Buna görə də endirim etməkdən qorxmayın.
 
 ---
 
-## 6. Sürətləndirici Faktorlar (Tips)
+## 6. HƏDƏFƏ ÇATMA STRATEGİYASI
 
-1. **Toplu Satış:** Bir şəbəkə klinikası (məsələn, 5 filialı olan) bağladıqda, quraşdırma haqqını 5 dəfə birdən alırsınız.
-2. **Referal Proqramı:** Mövcud müştəriniz başqa bir klinika gətirəndə ona 1 ay pulsuz xidmət verin. Bu, sizin reklam xərcinizi sıfıra endirir.
-3. **Up-sell:** Premium paketi (150 AZN/ay) satın. Cəmi 66 klinika ilə 10,000 AZN hədəfinə çatırsınız.
+1.  **Toplu Satış:** Bir şəbəkə klinikası bağlasanız (5 filial), bir gündə hədəfinizə xeyli yaxınlaşırsınız.
+2.  **Upsell (WhatsApp/Instagram):** Hər klinikaya əlavə olaraq WhatsApp botu da satın (+30₼). Bu sizin gəlirinizi xərc çəkmədən artırır.
+3.  **Referal:** Məmnun qalan həkimdən dostunun nömrəsini istəyin.
 
----
-
-## 7. Xərclərin Azaldılması
-Sistem Firebase üzərində qurulduğu üçün hosting və databaza xərcləri ilk aylarda **0 AZN** və ya çox cüzi olacaq. Sizin əsas xərciniz yalnız vaxtınızdır.
-
-**Hərəkətə keçin:** Bakıda 500-dən çox stomatoloji klinika var. Sizin hədəfə çatmağınız üçün bu bazarın cəmi **15%-i** kifayətdir.
+**Uğurlar! İlk 10 klinika ən çətinidir, sonra sistem özü-özünü satacaq.**

@@ -20,7 +20,8 @@ export interface VoiceState {
 
 export enum Speaker {
   User = 'User',
-  Agent = 'Agent'
+  Agent = 'Agent',
+  Doctor = 'doctor'
 }
 
 export interface TranscriptionEntry {

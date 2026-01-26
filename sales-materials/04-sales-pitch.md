@@ -1,4 +1,4 @@
-# 🎯 CELESTIA AI - SATIŞ PRÉZENTASİYASI
+# 🎯 STOM AI - SATIŞ PRÉZENTASİYASI
 
 **Stomatoloji Klinikalar Üçün AI Asistent**
 
@@ -8,7 +8,7 @@
 
 ### Təqdimat
 
-> "Salam! Mənim adım [Adınız]. Mən **Celestia AI** sisteminin nümayəndəsiyəm. Biz stomatoloji klinikalar üçün ağıllı AI asistent təklif edirik."
+> "Salam! Mənim adım [Adınız]. Mən **Stom AI** sisteminin nümayəndəsiyəm. Biz stomatoloji klinikalar üçün ağıllı AI asistent təklif edirik."
 
 ### Problem Müəyyənləşdirmə
 
@@ -48,9 +48,9 @@ u almaq üçün telefona zəng edən müştərilər olurmu?"
 
 ## ✨ HƏLLİMİZ (5 dəqiqə)
 
-### CELESTIA AI nədir?
+### STOM AI nədir?
 
-> "**Celestia AI** - 24/7 işləyən virtual resepsionstdur. Müştərilərlə danışır, suallarına cavab verir və avtomatik randevu təyin edir."
+> "**Stom AI** - 24/7 işləyən virtual resepsionstdur. Müştərilərlə danışır, suallarına cavab verir və avtomatik randevu təyin edir."
 
 ### Necə işləyir?
 
@@ -196,7 +196,7 @@ Sistem özünü 1 GÜNDƏ ödəyir!
 ### Etiraz 1: "Çox bahadır"
 
 **Cavab:**
-> "Başa düşürəm. Amma hesablayın: klinikanıza hər ay cəmi ₼120 ödənişlə 24/7 işləyən işçi alırsınız. Bu işçinin (AI) öz xərci isə inanılmaz dərəcədə aşağıdır. Ümumdünya texnologiya nəhəngi Google-un ən son **Gemini 3 Flash** modelindən istifadə edirik. Bu o deməkdir ki, sistemin minlərlə müştəri zənginə cavab verməsi üçün lazım olan büdcə cəmi ₼10-15 (5-8$) civarındadır. Siz əslində ayda ₼6,000 itirmək əvəzinə, bir qəhvə puluna (sentlərlə ölçülən zəng xərci) minlərlə manat qazanırsınız!"
+> "Başa düşürəm. Amma hesablayın: klinikanıza hər ay cəmi ₼120 ödənişlə 24/7 işləyən işçi alırsınız. Bu işçinin (AI) öz xərci isə inanılmaz dərəcədə aşağıdır. Ümumdünya texnologiya nəhəngi Google-un ən son **Gemini 2.5 Flash** modelindən istifadə edirik. Bu o deməkdir ki, sistemin minlərlə müştəri zənginə cavab verməsi üçün lazım olan büdcə cəmi ₼10-15 (5-8$) civarındadır. Siz əslində ayda ₼6,000 itirmək əvəzinə, bir qəhvə puluna (sentlərlə ölçülən zəng xərci) minlərlə manat qazanırsınız!"
 
 ### Etiraz 2: "AI-yə etibar etmirəm"
 
@@ -219,11 +219,11 @@ Sistem özünü 1 GÜNDƏ ödəyir!
 
 ## ⚡ GÜCÜMÜZ - ƏN SON TEXNOLOGİYA (2 dəqiqə)
 
-### Niyə məhz Celestia AI?
+### Niyə məhz Stom AI?
 
 > "Biz bazardakı standart botlardan fərqliyik. Bizim texnoloji partnyorumuz Google-dur."
 
-- **Gemini 3 Flash Texnologiyası:** Dünyanın ən son və ən ağıllı səsli sistemidir.
+- **Gemini 2.5 Flash Texnologiyası:** Dünyanın ən son və ən ağıllı səsli sistemidir.
 - **İnamlı və Təbii:** Müştəri robotla deyil, canlı insanla (Bakılı xanım obrazı ilə) danışdığını hiss edir.
 - **Hədsiz Ucuz Rezervasiya:**
   - 1 Səsli zəngin maya dəyəri: **₼0.01 - ₼0.02** (Qəpiklərlə!)
@@ -236,7 +236,7 @@ Sistem özünü 1 GÜNDƏ ödəyir!
 
 ### Üstünlükləri Xatırlat
 
-> "Beləliklə, Celestia AI ilə:
+> "Beləliklə, Stom AI ilə:
 > - ✅ Heç bir müştəri itirməzsiniz
 > - ✅ 24/7 randevu qəbul edirsiniz
 > - ✅ Resepsionistu boşaldırsınız
@@ -308,9 +308,9 @@ C: Biz kvotaları monitor edirik. Problemi siz hiss etməzdən əvvəl həll edi
 
 İndi danışmaq istəyirsinizmi?
 
-📧 **Email:** sales@celestia-ai.az  
+📧 **Email:** info@stom-ai.az  
 📱 **WhatsApp:** +994 XX XXX XX XX  
-🌐 **Demo:** www.celestia-ai.az/demo  
+🌐 **Demo:** https://demo.mezahir.shop  
 📍 **Ofis:** Bakı, Azərbaycan
 
 ---
@@ -331,7 +331,7 @@ Müştəriyə göndərmək üçün:
 
 > "Yadda saxlayın: **Hər gün gözləmək = Hər gün müştəri itirmək**
 > 
-> Celestia AI ilə **bu gün** başlayın, **sabah** qazanın!
+> Stom AI ilə **bu gün** başlayın, **sabah** qazanın!
 > 
 > Uğurlar! 🚀"
 
