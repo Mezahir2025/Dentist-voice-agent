@@ -313,8 +313,8 @@ Məsələn, əgər "dişim ağrıyır" desələr, siz "Çox təəssüf edirəm. 
               parameters: {
                 type: 'OBJECT' as any,
                 properties: {
-                  date: { type: 'STRING' as any },
-                  time: { type: 'STRING' as any }
+                  date: { type: 'STRING' as any, description: 'YYYY-MM-DD format (e.g. 2024-01-26)' },
+                  time: { type: 'STRING' as any, description: '24-hour format (e.g. 14:00)' }
                 },
                 required: ['date', 'time']
               }
@@ -500,7 +500,10 @@ Bugün: ${new Date().toLocaleString('az-AZ')}
                   description: 'Check availability. Use this when user asks about time.',
                   parameters: {
                     type: 'OBJECT',
-                    properties: { date: { type: 'STRING' }, time: { type: 'STRING' } },
+                    properties: {
+                      date: { type: 'STRING', description: 'YYYY-MM-DD' },
+                      time: { type: 'STRING', description: 'HH:mm (24-hour)' }
+                    },
                     required: ['date', 'time']
                   }
                 },
@@ -814,10 +817,10 @@ Bugün: ${new Date().toLocaleString('az-AZ')}
                 return allMessages.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : msg.role === 'doctor' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[80%] px-4 py-3 rounded-2xl ${msg.role === 'user'
-                        ? 'bg-gold-500 text-navy-950 rounded-tr-none'
-                        : msg.role === 'doctor'
-                          ? 'bg-blue-500 text-white rounded-tr-none'
-                          : 'bg-navy-800 text-white border border-white/5 rounded-tl-none'
+                      ? 'bg-gold-500 text-navy-950 rounded-tr-none'
+                      : msg.role === 'doctor'
+                        ? 'bg-blue-500 text-white rounded-tr-none'
+                        : 'bg-navy-800 text-white border border-white/5 rounded-tl-none'
                       }`}>
                       {msg.role === 'doctor' && (
                         <p className="text-[10px] font-bold mb-1 opacity-70 uppercase">Həkim</p>
