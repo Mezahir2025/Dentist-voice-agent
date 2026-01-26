@@ -221,7 +221,13 @@ const LiveVoiceSession: React.FC<Props> = ({ onAppointmentBooked, isOpen, onClos
 
     // Execute other tools (check/book)
     try {
-      const response = await fetch(APP_CONFIG.N8N_WEBHOOK_URL, {
+      // 1. Immediately update UI/DB for booking, regardless of webhook success
+      if (name === 'book_appointment') {
+        onAppointmentBooked(args);
+      }
+
+      // 2. Call Webhook (Fire & Forget or non-blocking for booking)
+      const webhookPromise = fetch(APP_CONFIG.N8N_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -229,9 +235,16 @@ const LiveVoiceSession: React.FC<Props> = ({ onAppointmentBooked, isOpen, onClos
           ...args
         })
       });
-      const result = await response.json();
 
-      if (name === 'book_appointment') onAppointmentBooked(args);
+      // For availability check, we MUST wait for the result
+      let result = { success: true };
+      if (name === 'check_calendar_availability') {
+        const response = await webhookPromise;
+        result = await response.json();
+      } else {
+        // For booking, we just log the webhook result but don't block the UI confirmation
+        webhookPromise.catch(e => console.error("Webhook failed:", e));
+      }
 
       // Send response back to Gemini
       const toolResponse = {
@@ -249,6 +262,18 @@ const LiveVoiceSession: React.FC<Props> = ({ onAppointmentBooked, isOpen, onClos
 
     } catch (e) {
       console.error('Tool execution error', e);
+      // Even if everything fails, tell Gemini it worked so it continues the convo
+      const toolResponse = {
+        tool_response: {
+          function_responses: [{
+            response: { result: { error: "Internal processing error, but booked locally." } },
+            id: callId
+          }]
+        }
+      };
+      if (websocketRef.current?.readyState === WebSocket.OPEN) {
+        websocketRef.current.send(JSON.stringify(toolResponse));
+      }
     }
   };
 
@@ -338,6 +363,21 @@ Məsələn, əgər "dişim ağrıyır" desələr, siz "Çox təəssüf edirəm. 
         }]
       });
 
+      // Ensure session exists before saving messages
+      const currentSessionId = await ensureSession();
+
+      // IMMEDIATE SAVE: Save user message to DB *before* API call
+      if (currentSessionId) {
+        // If this is a new session, save the initial local greeting first
+        if (!sessionId) {
+          const greeting = textMessages.find(m => m.isLocal && m.role === 'assistant');
+          if (greeting) {
+            await ChatService.saveMessage(currentSessionId, Speaker.Agent, greeting.text);
+          }
+        }
+        await ChatService.saveMessage(currentSessionId, Speaker.User, userMessage);
+      }
+
       const chat = model.startChat({
         history: textMessages
           .filter(m => !m.isLocal) // Filter out local-only messages (like initial greeting) from API history
@@ -349,8 +389,6 @@ Məsələn, əgər "dişim ağrıyır" desələr, siz "Çox təəssüf edirəm. 
       const result = await chat.sendMessage(userMessage);
       const response = result.response;
 
-      // Ensure session exists before saving messages
-      const currentSessionId = await ensureSession();
 
       // Check for function calls in response
       const candidate = response.candidates?.[0];
@@ -365,6 +403,7 @@ Məsələn, əgər "dişim ağrıyır" desələr, siz "Çox təəssüf edirəm. 
         }
 
         // Execute tool
+        // Note: For text mode, we keep this simple. Ideally unify with handleToolCall logic.
         const toolResult = await fetch(APP_CONFIG.N8N_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -392,14 +431,6 @@ Məsələn, əgər "dişim ağrıyır" desələr, siz "Çox təəssüf edirəm. 
 
         // Save to chat service
         if (currentSessionId) {
-          // If this is a new session, save the initial local greeting first
-          if (!sessionId) {
-            const greeting = textMessages.find(m => m.isLocal && m.role === 'assistant');
-            if (greeting) {
-              await ChatService.saveMessage(currentSessionId, Speaker.Agent, greeting.text);
-            }
-          }
-          await ChatService.saveMessage(currentSessionId, Speaker.User, userMessage);
           await ChatService.saveMessage(currentSessionId, Speaker.Agent, finalText);
         }
       } else {
@@ -408,14 +439,6 @@ Məsələn, əgər "dişim ağrıyır" desələr, siz "Çox təəssüf edirəm. 
 
         // Save to chat service
         if (currentSessionId) {
-          // If this is a new session, save the initial local greeting first
-          if (!sessionId) {
-            const greeting = textMessages.find(m => m.isLocal && m.role === 'assistant');
-            if (greeting) {
-              await ChatService.saveMessage(currentSessionId, Speaker.Agent, greeting.text);
-            }
-          }
-          await ChatService.saveMessage(currentSessionId, Speaker.User, userMessage);
           await ChatService.saveMessage(currentSessionId, Speaker.Agent, assistantText);
         }
       }
