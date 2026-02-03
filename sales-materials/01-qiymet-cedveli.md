@@ -1,4 +1,4 @@
-# 💼 CELESTIA AI - QİYMƏT CƏDVƏLİ
+# 💼 STOM AI - QİYMƏT CƏDVƏLİ
 
 ## 🎯 Xidmət Paketləri
 
@@ -46,7 +46,7 @@
 
 | Modul | Qiymət | Məlumat |
 |-------|--------|---------|
-| � **WhatsApp Botu** | + ₼30/ay | Müştəriləri WhatsApp-da cavablayır |
+| 💬 **WhatsApp Botu** | + ₼30/ay | Müştəriləri WhatsApp-da cavablayır |
 | 📸 **Instagram Direct** | + ₼30/ay | Instagram 'Direct' mesajlarını cavablayır |
 | 🌐 **Landing Page** | ₼400 (birdəfəlik) | Klinika üçün sayt yoxdursa hazırlanır |
 ---
@@ -69,32 +69,41 @@ Qazanc: ₼5,880/ay = ₼70,560/il
 
 ---
 
-## 🎯 KAMPANIYA
+## 🎯 AKTİV KAMPANIYALAR
 
-### ⏰ İlk 10 Müştəriyə Xüsusi Təklif:
+### 🔥 Kampaniya 1: "İLK 3 KLİNİKA" (50% Endirim)
+*Yeni regionlarda ilkin bazara giriş üçün*
+
+```
+┌──────────────────────────────────┐
+│  🎉 PROFESSIONAL PAKET           │
+│                                   │
+│  ✂️ Quraşdırma: ₼500 → ₼250     │
+│  ✂️ İlk ay: ₼120 → ₼60          │
+│                                   │
+│  💰 START ÜÇÜN CƏMİ: ₼310        │
+└──────────────────────────────────┘
+```
+
+### ⏰ Kampaniya 2: "STANDARD ENDİRİM"
+*Limitli müddət üçün*
 
 ```
 ┌──────────────────────────────────┐
 │  🎉 PROFESSIONAL PAKET           │
 │                                   │
 │  ✂️ Quraşdırma: ₼500 → ₼350     │
-│  ✂️ İlk 3 ay: ₼120 → ₼90/ay     │
-│                                   │
-│  💰 Cəmi qənaət: ₼240            │
+│  ✂️ Aylıq: ₼120 → ₼90           │
 └──────────────────────────────────┘
 ```
-
-**Şərt:** 31 yanvar 2026-dan əvvəl müqavilə imzalanmalıdır
 
 ---
 
 ## 📞 ƏLAQƏ
 
-**Celestia AI - Stomatoloji AI Asistent**
+**Stom AI - Süni İntellekt Stomatoloji Asistent**
 
-📧 Email: info@celestia-ai.az  
-📱 WhatsApp: +994 XX XXX XX XX  
-🌐 Website: www.celestia-ai.az  
+🌐 Demo: [demo.mezahir.shop](https://demo.mezahir.shop)
 📍 Ünvan: Bakı, Azərbaycan
 
 ---
@@ -102,15 +111,14 @@ Qazanc: ₼5,880/ay = ₼70,560/il
 ## ⚖️ ÖDƏNİŞ ŞƏRTLƏRI
 
 1. **Quraşdırma ödənişi**: Müqavilə imzalanandan sonra 3 iş günü ərzində
-2. **Aylıq abunə**: Hər ayın 1-də avtomatik bank kartından
+2. **Aylıq abunə**: Hər ayın 1-də
 3. **Ödəniş üsulları**: 
    - 💳 Bank kartı (Visa/Mastercard)
    - 🏦 Bank köçürməsi
-   - 💵 Nəğd (yalnız ilkin ödəniş)
+   - 💵 Nəğd
 
 4. **Geri qaytarma siyasəti**:
    - İlk 14 gün: 100% geri qaytarma (əgər xidmət işləmirsə)
-   - Sonra: Pro-rata (istifadə olunmamış günlərə görə)
 
 ---
 
@@ -124,6 +132,6 @@ Qazanc: ₼5,880/ay = ₼70,560/il
 
 ---
 
-*Qiymətlər 16.01.2026 tarixinə uyğundur və bildiriş olmadan dəyişdirilə bilər*
+*Qiymətlər 27.01.2026 tarixinə uyğundur və bildiriş olmadan dəyişdirilə bilər*
 
-**Celestia AI** © 2026 | Made with ❤️ in Azerbaijan 🇦🇿
+**Stom AI** © 2026 | Made with ❤️ in Azerbaijan 🇦🇿

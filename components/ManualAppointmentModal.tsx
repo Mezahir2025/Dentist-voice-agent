@@ -26,7 +26,7 @@ const ManualAppointmentModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) 
         try {
             await onSubmit({
                 patientName: formData.patientName,
-                phoneNumber: formData.phone, // Map phone to phoneNumber to match Appointment type
+                phone: formData.phone, // Match Supabase column name 'phone'
                 date: formData.date,
                 time: formData.time,
                 reason: formData.reason

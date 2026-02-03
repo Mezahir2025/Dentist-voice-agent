@@ -9,20 +9,7 @@ import {
   Loader2, LogIn, Mail, Twitter, Target, Award, Users2,
   CheckCircle, Check, Sparkles, Filter, LayoutGrid, List, Activity, Users, CalendarCheck
 } from 'lucide-react';
-import { auth, db } from './firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import type { User } from 'firebase/auth';
-import {
-  collection,
-  onSnapshot,
-  query,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  serverTimestamp,
-  Timestamp
-} from 'firebase/firestore';
+import { supabase } from './supabaseClient';
 import { Appointment } from './types';
 import LiveVoiceSession from './components/LiveVoiceSession';
 import Auth from './components/Auth';
@@ -32,10 +19,9 @@ import ManualAppointmentModal from './components/ManualAppointmentModal';
 import { BRAND_CONFIG } from './brandConfig';
 
 type UserRole = 'patient' | 'dentist';
-const COLLECTION_PATH = "3289uriu2903u90";
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [role, setRole] = useState<UserRole>('patient');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -70,56 +56,98 @@ const App: React.FC = () => {
       document.head.appendChild(link);
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-      if (user) {
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setCurrentUser(session.user);
         setRole('dentist');
-        setIsVoiceWidgetOpen(false); // Close widget when entering dashboard
+      }
+      setAuthLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setCurrentUser(session.user);
+        setRole('dentist');
+        setIsVoiceWidgetOpen(false);
       } else {
+        setCurrentUser(null);
         setRole('patient');
       }
       setAuthLoading(false);
     });
-    return () => unsubscribe();
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  // 2. Fetch Appointments
   useEffect(() => {
     if (!currentUser || role !== 'dentist') return;
-    const q = query(collection(db, COLLECTION_PATH));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const apps = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Appointment[];
-      setAppointments(apps.sort((a, b) => b.timestamp - a.timestamp));
-    });
-    return () => unsubscribe();
+
+    // Initial Fetch
+    supabase
+      .from('appointments')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) console.error("Initial fetch error:", error.message);
+        if (data) setAppointments(data as Appointment[]);
+      });
+
+    // Realtime listener
+    const channel = supabase
+      .channel('public:appointments')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        () => {
+          supabase
+            .from('appointments')
+            .select('*')
+            .order('timestamp', { ascending: false })
+            .then(({ data }) => {
+              if (data) setAppointments(data as Appointment[]);
+            });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [currentUser, role]);
 
   const handleLogout = async () => {
-    await signOut(auth);
+    await supabase.auth.signOut();
     setRole('patient');
   };
 
   const handleUpdateStatus = async (id: string, status: 'confirmed' | 'cancelled') => {
     if (status === 'cancelled') {
-      // Delete cancelled appointments instead of updating status
-      const docRef = doc(db, COLLECTION_PATH, id);
-      await deleteDoc(docRef);
+      await supabase.from('appointments').delete().eq('id', id);
     } else {
-      const docRef = doc(db, COLLECTION_PATH, id);
-      await updateDoc(docRef, { status });
+      await supabase.from('appointments').update({ status }).eq('id', id);
     }
   };
 
   const handleBookAppointment = async (data: any) => {
-    await addDoc(collection(db, COLLECTION_PATH), {
-      ...data,
-      status: 'pending',
-      timestamp: Date.now(),
-      createdAt: serverTimestamp()
-    });
+    const { error } = await supabase.from('appointments').insert([
+      {
+        patient_name: data.patientName,
+        phone: data.phone,
+        date: data.date,
+        time: data.time,
+        reason: data.reason,
+        status: 'pending',
+        timestamp: Date.now()
+      }
+    ]);
+
+    if (error) {
+      console.error("Booking error details:", error.message, error.details, error.hint);
+      return;
+    }
+
     setNotification({ message: 'Randevunuz uğurla qeydə alındı!', type: 'success' });
     setTimeout(() => setNotification(null), 5000);
   };
@@ -127,9 +155,12 @@ const App: React.FC = () => {
   const handleDeleteAllAppointments = async () => {
     if (!currentUser || role !== 'dentist') return;
 
-    // Batch delete would be better for many docs, but loop is fine for small scale
-    const promises = appointments.map(app => deleteDoc(doc(db, COLLECTION_PATH, app.id)));
-    await Promise.all(promises);
+    const { error } = await supabase.from('appointments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (error) {
+      console.error("Delete all error:", error);
+      return;
+    }
 
     setNotification({ message: 'Bütün randevular silindi!', type: 'success' });
     setTimeout(() => setNotification(null), 3000);

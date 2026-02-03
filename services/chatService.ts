@@ -1,186 +1,159 @@
-import { db } from '../firebase';
-import {
-    collection,
-    addDoc,
-    query,
-    orderBy,
-    onSnapshot,
-    Timestamp,
-    getDocs,
-    writeBatch,
-    serverTimestamp,
-    doc,
-    updateDoc,
-    deleteDoc
-} from 'firebase/firestore';
+import { supabase } from '../supabaseClient';
 import { Speaker } from '../types';
 
 export interface ChatSession {
     id: string;
-    patientName: string; // 'Anonim' ve ya 'Məzahir bəy'
-    lastMessage: string;
-    lastMessageTime: any;
-    createdAt: any;
+    patient_name: string;
+    last_message: string;
+    last_message_time: string;
     status: 'active' | 'completed' | 'waiting_for_doctor' | 'doctor_responding';
+    created_at: string;
 }
 
 export interface ChatMessage {
-    id?: string;
+    id: string;
+    session_id: string;
     speaker: Speaker;
     text: string;
-    timestamp: any;
-    createdAt: any;
+    timestamp: number;
+    created_at: string;
 }
 
-const SESSIONS_COL = 'voice_agent_sessions';
-
 export const ChatService = {
-    // 1. Yeni sessiya yarat (Sayt açılanda)
     createSession: async (initialName: string = "Anonim Xəstə"): Promise<string> => {
         try {
-            const docRef = await addDoc(collection(db, SESSIONS_COL), {
-                patientName: initialName,
-                lastMessage: "Söhbət başladı",
-                lastMessageTime: serverTimestamp(),
-                createdAt: serverTimestamp(),
-                status: 'active'
-            });
-            return docRef.id;
+            const { data, error } = await supabase
+                .from('sessions')
+                .insert([
+                    {
+                        patient_name: initialName,
+                        last_message: "Söhbət başladı",
+                        status: 'active'
+                    }
+                ])
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data.id;
         } catch (error) {
             console.error("Error creating session:", error);
             throw error;
         }
     },
 
-    // 2. Sessiyanın adını yenilə (Məs: "Məzahir bəy" tapılanda)
     updateSessionName: async (sessionId: string, newName: string) => {
         try {
-            const sessionRef = doc(db, SESSIONS_COL, sessionId);
-            await updateDoc(sessionRef, { patientName: newName });
+            const { error } = await supabase
+                .from('sessions')
+                .update({ patient_name: newName })
+                .eq('id', sessionId);
+            if (error) throw error;
         } catch (error) {
             console.error("Error updating session name:", error);
         }
     },
 
-    // 3. Mesaj yaz (Konkret sessiya ID-si ilə)
     saveMessage: async (sessionId: string, speaker: Speaker, text: string) => {
         if (!sessionId) return;
         try {
-            // Mesajı sub-kolleksiyaya yaz
-            const messagesRef = collection(db, SESSIONS_COL, sessionId, 'messages');
-            await addDoc(messagesRef, {
-                speaker,
-                text,
-                timestamp: Date.now(),
-                createdAt: serverTimestamp()
-            });
+            const { error: msgError } = await supabase
+                .from('messages')
+                .insert([
+                    {
+                        session_id: sessionId,
+                        speaker,
+                        text,
+                        timestamp: Date.now()
+                    }
+                ]);
+            if (msgError) throw msgError;
 
-            // Sessiyanın "Son Mesaj"ını yenilə (Dashboard üçün)
-            const sessionRef = doc(db, SESSIONS_COL, sessionId);
-            await updateDoc(sessionRef, {
-                lastMessage: text,
-                lastMessageTime: serverTimestamp()
-            });
+            await supabase
+                .from('sessions')
+                .update({
+                    last_message: text,
+                    last_message_time: new Date().toISOString()
+                })
+                .eq('id', sessionId);
         } catch (error) {
             console.error("Error saving message:", error);
         }
     },
 
-    // 4. Konkret sessiyanın mesajlarını dinlə (Dashboard-da sağ tərəf üçün)
     subscribeToSessionMessages: (sessionId: string, callback: (messages: ChatMessage[]) => void) => {
         if (!sessionId) return () => { };
+        supabase
+            .from('messages')
+            .select('*')
+            .eq('session_id', sessionId)
+            .order('created_at', { ascending: true })
+            .then(({ data }) => {
+                if (data) callback(data as ChatMessage[]);
+            });
 
-        const messagesRef = collection(db, SESSIONS_COL, sessionId, 'messages');
-        const q = query(messagesRef, orderBy('createdAt', 'asc'));
-
-        return onSnapshot(q, (snapshot) => {
-            const messages = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as ChatMessage));
-            callback(messages);
-        });
+        const channel = supabase
+            .channel(`messages:${sessionId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `session_id=eq.${sessionId}` }, () => {
+                supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('session_id', sessionId)
+                    .order('created_at', { ascending: true })
+                    .then(({ data }) => {
+                        if (data) callback(data as ChatMessage[]);
+                    });
+            })
+            .subscribe();
+        return () => supabase.removeChannel(channel);
     },
 
-    // 5. Bütün sessiyaları dinlə (Dashboard-da SOL tərəf siyahısı üçün)
     subscribeToAllSessions: (callback: (sessions: ChatSession[]) => void) => {
-        const q = query(collection(db, SESSIONS_COL), orderBy('lastMessageTime', 'desc'));
-        return onSnapshot(q, (snapshot) => {
-            const sessions = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as ChatSession));
-            callback(sessions);
-        });
+        supabase
+            .from('sessions')
+            .select('*')
+            .order('last_message_time', { ascending: false })
+            .then(({ data }) => {
+                if (data) callback(data as ChatSession[]);
+            });
+
+        const channel = supabase
+            .channel('public:sessions')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => {
+                supabase
+                    .from('sessions')
+                    .select('*')
+                    .order('last_message_time', { ascending: false })
+                    .then(({ data }) => {
+                        if (data) callback(data as ChatSession[]);
+                    });
+            })
+            .subscribe();
+        return () => supabase.removeChannel(channel);
     },
 
-    // 6. Sessiyanı sil (Mesajları ilə birlikdə)
     deleteSession: async (sessionId: string) => {
-        try {
-            // Əvvəlcə mesajları sil
-            const messagesRef = collection(db, SESSIONS_COL, sessionId, 'messages');
-            const snapshot = await getDocs(messagesRef);
-            const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
-            await Promise.all(deletePromises);
-
-            // Sonra sessiyanı sil
-            await deleteDoc(doc(db, SESSIONS_COL, sessionId));
-        } catch (e) { console.error("Session delete error:", e); }
+        await supabase.from('sessions').delete().eq('id', sessionId);
     },
 
-    // 7. Bütün sessiyaları sil (Admin üçün)
     deleteAllSessions: async () => {
-        try {
-            const q = query(collection(db, SESSIONS_COL));
-            const snapshot = await getDocs(q);
-
-            // Hər sessiya üçün deleteSession çağır (kiçik layihə üçün okdir)
-            const deletePromises = snapshot.docs.map(doc => ChatService.deleteSession(doc.id));
-            await Promise.all(deletePromises);
-        } catch (e) {
-            console.error("Error deleting all sessions:", e);
-        }
+        await supabase.from('sessions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     },
 
-    // 7.5. Tək mesajı sil
     deleteMessage: async (sessionId: string, messageId: string) => {
-        try {
-            await deleteDoc(doc(db, SESSIONS_COL, sessionId, 'messages', messageId));
-        } catch (e) {
-            console.error("Error deleting message:", e);
-        }
+        if (!sessionId || !messageId) return;
+        await supabase.from('messages').delete().eq('id', messageId);
     },
 
-    // 8. Sessiyanın statusunu yenilə (Həkimlə danışmaq üçün)
     updateSessionStatus: async (sessionId: string, status: 'active' | 'waiting_for_doctor' | 'doctor_responding') => {
-        try {
-            const sessionRef = doc(db, SESSIONS_COL, sessionId);
-            await updateDoc(sessionRef, { status });
-        } catch (error) {
-            console.error("Error updating session status:", error);
-        }
+        await supabase.from('sessions').update({ status }).eq('id', sessionId);
     },
 
-    // 9. Həkim mesajı göndər
     sendDoctorMessage: async (sessionId: string, text: string) => {
         if (!sessionId || !text.trim()) return;
         try {
-            // Mesajı 'doctor' speaker ilə yaz
-            const messagesRef = collection(db, SESSIONS_COL, sessionId, 'messages');
-            await addDoc(messagesRef, {
-                speaker: 'doctor' as Speaker,
-                text,
-                timestamp: Date.now(),
-                createdAt: serverTimestamp()
-            });
-
-            // Sessiyanın "Son Mesaj"ını və statusunu yenilə
-            const sessionRef = doc(db, SESSIONS_COL, sessionId);
-            await updateDoc(sessionRef, {
-                lastMessage: text,
-                lastMessageTime: serverTimestamp(),
-                status: 'doctor_responding'
-            });
+            await supabase.from('messages').insert([{ session_id: sessionId, speaker: 'doctor', text, timestamp: Date.now() }]);
+            await supabase.from('sessions').update({ last_message: text, last_message_time: new Date().toISOString(), status: 'doctor_responding' }).eq('id', sessionId);
         } catch (error) {
             console.error("Error sending doctor message:", error);
         }

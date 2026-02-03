@@ -1,12 +1,6 @@
 
 import React, { useState } from 'react';
-import { auth } from '../firebase';
-// Fix: Ensure modular named exports are correctly imported from firebase/auth
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  updateProfile
-} from 'firebase/auth';
+import { supabase } from '../supabaseClient';
 import { Stethoscope, Mail, Lock, User, ArrowRight, Loader2, AlertCircle, X } from 'lucide-react';
 
 interface AuthProps {
@@ -32,22 +26,30 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose, onAuthSuccess }) => {
 
     try {
       if (isLogin) {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        onAuthSuccess(userCredential.user);
+        const { data, error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (authError) throw authError;
+        onAuthSuccess(data.user);
         onClose();
       } else {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, { displayName: name });
-        onAuthSuccess(userCredential.user);
+        const { data, error: authError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              display_name: name,
+            },
+          },
+        });
+        if (authError) throw authError;
+        onAuthSuccess(data.user);
         onClose();
       }
     } catch (err: any) {
       console.error('❌ Auth Error:', err);
-      console.error('❌ Code:', err.code);
-      console.error('❌ Message:', err.message);
-      setError(err.message.includes('auth/invalid-credential')
-        ? "E-poçt və ya şifrə yanlışdır."
-        : "Xəta baş verdi: " + err.message);
+      setError(err.message || "Xəta baş verdi");
     } finally {
       setLoading(false);
     }

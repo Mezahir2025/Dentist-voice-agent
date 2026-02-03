@@ -7,7 +7,7 @@ import {
   Check, User, Filter, LayoutGrid, List, Activity, Users, CalendarCheck, Sparkles
 } from 'lucide-react';
 import { Appointment, Speaker } from '../types';
-import { ChatService, ChatMessage } from '../services/chatService';
+import { ChatService, ChatMessage, ChatSession } from '../services/chatService';
 import { BRAND_CONFIG } from '../brandConfig';
 import ConfirmModal from './ConfirmModal';
 import NotificationDropdown from './NotificationDropdown';
@@ -32,7 +32,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   onDeleteAll
 }) => {
   const [activeTab, setActiveTab] = useState<'appointments' | 'chat'>('appointments');
-  const [viewDate, setViewDate] = useState(new Date());
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'confirmed' | 'cancelled'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -48,11 +47,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Notification state
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [readNotifications, setReadNotifications] = useState<Set<string>>(new Set());
-  const [lastAppointmentCount, setLastAppointmentCount] = useState(0);
-  const [lastSessionCount, setLastSessionCount] = useState(0);
 
   // Multi-session chat stats
-  const [sessions, setSessions] = React.useState<any[]>([]);
+  const [sessions, setSessions] = React.useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = React.useState<string | null>(null);
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -124,9 +121,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     });
   };
 
-  // Count sessions waiting for doctor
-  const waitingForDoctorCount = sessions.filter(s => s.status === 'waiting_for_doctor').length;
-
   const selectedSession = sessions.find(s => s.id === activeSessionId);
 
   // Generate notifications
@@ -143,13 +137,8 @@ const Dashboard: React.FC<DashboardProps> = ({
           id,
           type: 'appointment',
           title: 'Yeni randevu',
-          message: `${app.patientName} - ${app.reason}`,
-          time: app.createdAt ? new Date(app.createdAt.seconds * 1000).toLocaleString('az-AZ', {
-            day: 'numeric',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit'
-          }) : 'İndi',
+          message: `${app.patient_name} - ${app.reason}`,
+          time: 'Yeni',
           isRead: readNotifications.has(id)
         });
       });
@@ -164,13 +153,8 @@ const Dashboard: React.FC<DashboardProps> = ({
           id,
           type: 'message',
           title: 'Yeni mesaj',
-          message: `${session.patientName} həkimlə danışmaq istəyir`,
-          time: session.lastMessageTime ? new Date(session.lastMessageTime.seconds * 1000).toLocaleString('az-AZ', {
-            day: 'numeric',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit'
-          }) : 'İndi',
+          message: `${session.patient_name} həkimlə danışmaq istəyir`,
+          time: 'Yeni',
           isRead: readNotifications.has(id)
         });
       });
@@ -200,18 +184,12 @@ const Dashboard: React.FC<DashboardProps> = ({
       const sessionId = notification.id.replace('msg-', '');
       setActiveSessionId(sessionId);
       setIsNotificationOpen(false);
-      // Scroll to messages tab to ensure it's visible
-      setTimeout(() => {
-        const messagesTab = document.querySelector('[data-tab="chat"]');
-        messagesTab?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 100);
     }
   };
 
   const handleViewAllNotifications = () => {
-    // Show all sessions in chat tab
     setActiveTab('chat');
-    setActiveSessionId(null); // Deselect any active session to show list
+    setActiveSessionId(null);
     setIsNotificationOpen(false);
   };
 
@@ -427,26 +405,23 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <LayoutGrid size={18} />
                   </button>
                 </div>
-                {currentUser?.email === 'admin@stomai.az' || true ? ( // Show for everyone for now since it's personal
-                  <button
-                    onClick={() => {
-                      setConfirmModal({
-                        isOpen: true,
-                        title: 'Bütün randevuları sil',
-                        message: 'DİQQƏT: Bütün randevular silinəcək! Bu əməliyyatı geri qaytarmaq mümkün deyil.\n\nDavam etmək istəyirsiniz?',
-                        onConfirm: () => {
-                          onDeleteAll();
-                          setConfirmModal({ ...confirmModal, isOpen: false });
-                        }
-                      });
-                    }}
-                    className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors ml-auto group relative"
-                    title="Hamısını Sil"
-                  >
-                    <LogOut size={18} />
-                    <span className="absolute right-0 top-full mt-1 w-max px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Hamısını Sil</span>
-                  </button>
-                ) : null}
+                <button
+                  onClick={() => {
+                    setConfirmModal({
+                      isOpen: true,
+                      title: 'Bütün randevuları sil',
+                      message: 'DİQQƏT: Bütün randevular silinəcək! Bu əməliyyatı geri qaytarmaq mümkün deyil.\n\nDavam etmək istəyirsiniz?',
+                      onConfirm: () => {
+                        onDeleteAll();
+                        setConfirmModal({ ...confirmModal, isOpen: false });
+                      }
+                    });
+                  }}
+                  className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors ml-auto group relative"
+                  title="Hamısını Sil"
+                >
+                  <LogOut size={18} />
+                </button>
               </div>
 
               {/* Appointments List/Grid */}
@@ -469,11 +444,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                             <td className="py-5 px-6">
                               <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm uppercase">
-                                  {app.patientName?.[0] || 'X'}
+                                  {app.patient_name?.[0] || 'X'}
                                 </div>
                                 <div>
-                                  <p className="font-bold text-slate-900 text-sm">{app.patientName}</p>
-                                  <p className="text-xs text-slate-400">{app.phoneNumber}</p>
+                                  <p className="font-bold text-slate-900 text-sm">{app.patient_name}</p>
+                                  <p className="text-xs text-slate-400">{app.phone}</p>
                                 </div>
                               </div>
                             </td>
@@ -481,15 +456,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                               <div className="flex flex-col">
                                 <span className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                   <CalendarIcon size={14} className="text-slate-400" />
-                                  {typeof app.date === 'object' && app.date?.seconds
-                                    ? new Date(app.date.seconds * 1000).toLocaleDateString('az-AZ')
-                                    : String(app.date || '')}
+                                  {app.date}
                                 </span>
                                 <span className="text-xs text-slate-400 flex items-center gap-2 mt-1">
                                   <Clock size={14} />
-                                  {typeof app.time === 'object' && app.time?.seconds
-                                    ? new Date(app.time.seconds * 1000).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })
-                                    : String(app.time || '')}
+                                  {app.time}
                                 </span>
                               </div>
                             </td>
@@ -526,18 +497,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                             </td>
                           </tr>
                         ))}
-                        {filteredAppointments.length === 0 && (
-                          <tr>
-                            <td colSpan={5} className="py-12 text-center text-slate-400">
-                              <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center">
-                                  <CalendarIcon size={24} className="opacity-50" />
-                                </div>
-                                <p className="text-sm font-medium">Bu statusda randevu tapılmadı.</p>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
                       </tbody>
                     </table>
                   </div>
@@ -553,45 +512,20 @@ const Dashboard: React.FC<DashboardProps> = ({
                       <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-600 font-bold text-lg uppercase">
-                            {app.patientName?.[0] || 'X'}
+                            {app.patient_name?.[0] || 'X'}
                           </div>
                           <div>
-                            <h3 className="font-bold text-slate-900 text-lg">{app.patientName}</h3>
-                            <p className="text-xs text-slate-400 font-medium">{app.phoneNumber}</p>
+                            <h3 className="font-bold text-slate-900 text-lg">{app.patient_name}</h3>
+                            <p className="text-xs text-slate-400 font-medium">{app.phone}</p>
                           </div>
                         </div>
                         <button className="text-slate-300 hover:text-slate-600"><MoreHorizontal size={20} /></button>
                       </div>
-
-                      <div className="space-y-3 mb-6">
-                        <div className="flex items-center gap-3 text-sm text-slate-600">
-                          <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                            <CalendarIcon size={16} />
-                          </div>
-                          <span className="font-semibold">
-                            {typeof app.date === 'object' && app.date?.seconds
-                              ? new Date(app.date.seconds * 1000).toLocaleDateString('az-AZ')
-                              : String(app.date || '')}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 text-sm text-slate-600">
-                          <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                            <Clock size={16} />
-                          </div>
-                          <span className="font-semibold">
-                            {typeof app.time === 'object' && app.time?.seconds
-                              ? new Date(app.time.seconds * 1000).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })
-                              : String(app.time || '')}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 text-sm text-slate-600">
-                          <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                            <Activity size={16} />
-                          </div>
-                          <span className="font-medium">{app.reason}</span>
-                        </div>
+                      <div className="space-y-3 mb-6 font-medium text-slate-600">
+                        <p className="flex items-center gap-2 text-sm"><CalendarIcon size={14} /> {app.date}</p>
+                        <p className="flex items-center gap-2 text-sm"><Clock size={14} /> {app.time}</p>
+                        <p className="flex items-center gap-2 text-sm"><Activity size={14} /> {app.reason}</p>
                       </div>
-
                       <div className="flex gap-3 pt-4 border-t border-slate-50">
                         <button onClick={() => onUpdateStatus(app.id, 'confirmed')} className="flex-1 bg-emerald-50 text-emerald-600 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-emerald-100 transition-colors">
                           Təsdiqlə
@@ -607,147 +541,75 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           ) : (
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-[#F8FAFC]">
-              {/* Chat Sidebar - Sessiyalar Siyahısı */}
+              {/* Chat Sidebar */}
               <div className={`w-full lg:w-80 bg-white border-r border-slate-100 flex flex-col min-h-0 ${activeSessionId ? 'hidden lg:flex' : 'flex'}`}>
                 <div className="p-4 md:p-6 border-b border-slate-50">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-slate-900">Mesajlar</h2>
-                    {currentUser?.email === 'admin@stomai.az' || true ? (
-                      <button
-                        onClick={async () => {
-                          setConfirmModal({
-                            isOpen: true,
-                            title: 'Bütün mesajları sil',
-                            message: 'DİQQƏT: Bütün mesajlaşma tarixçəsi silinəcək!\n\nDavam etmək istəyirsiniz?',
-                            onConfirm: async () => {
-                              await ChatService.deleteAllSessions();
-                              setConfirmModal({ ...confirmModal, isOpen: false });
-                            }
-                          });
-                        }}
-                        className="text-[10px] text-rose-400 hover:text-rose-600 font-bold uppercase tracking-wider hover:underline"
-                        title="Bütün söhbətləri sil"
-                      >
-                        Hamısını Sil
-                      </button>
-                    ) : null}
-                  </div>
+                  <h2 className="text-xl font-bold text-slate-900 mb-4">Mesajlar</h2>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                     <input type="text" placeholder="Axtar..." className="w-full bg-slate-50 border-none rounded-xl py-3 pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all" />
                   </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                  {sessions.length === 0 ? (
-                    <div className="text-center py-10 text-slate-400 text-xs">Heç bir söhbət tapılmadı.</div>
-                  ) : (
-                    sessions.map(session => (
-                      <button
-                        key={session.id}
-                        onClick={() => setActiveSessionId(session.id)}
-                        className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left ${activeSessionId === session.id ? `bg-${BRAND_CONFIG.colors.primary}-50 border border-${BRAND_CONFIG.colors.primary}-100 shadow-sm` : 'hover:bg-slate-50 border border-transparent'}`}
-                      >
-                        <div className="relative shrink-0">
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xs uppercase bg-emerald-500`}>
-                            {session.patientName?.[0] || 'A'}
-                          </div>
-                          {session.status === 'waiting_for_doctor' && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-center mb-1">
-                            <h4 className="font-bold text-sm text-slate-900 truncate">{session.patientName}</h4>
-                          </div>
-                          <p className="text-xs text-slate-500 truncate">{session.lastMessage}</p>
-                        </div>
-                      </button>
-                    ))
-                  )}
+                  {sessions.map(session => (
+                    <button
+                      key={session.id}
+                      onClick={() => setActiveSessionId(session.id)}
+                      className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left ${activeSessionId === session.id ? `bg-${BRAND_CONFIG.colors.primary}-50 border border-${BRAND_CONFIG.colors.primary}-100 shadow-sm` : 'hover:bg-slate-50 border border-transparent'}`}
+                    >
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xs uppercase bg-emerald-500 shrink-0">
+                        {session.patient_name?.[0] || 'A'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-sm text-slate-900 truncate">{session.patient_name}</h4>
+                        <p className="text-xs text-slate-500 truncate">{session.last_message}</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Chat Area - Seçilmiş Sessiya */}
+              {/* Chat Area */}
               <div className={`flex-1 flex flex-col bg-[#F8FAFC] min-h-0 ${!activeSessionId ? 'hidden lg:flex' : 'flex'}`}>
                 {selectedSession ? (
                   <>
                     <div className="h-20 px-4 md:px-8 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
                       <div className="flex items-center gap-4">
-                        <button
-                          onClick={() => setActiveSessionId(null)}
-                          className="lg:hidden p-2 -ml-2 text-slate-400 hover:text-slate-600"
-                        >
-                          <ChevronLeft size={24} />
-                        </button>
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs uppercase ${BRAND_CONFIG.colors.primaryFull}`}>
-                          {selectedSession.patientName?.[0]}
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-sm text-slate-900">{selectedSession.patientName}</h4>
-                          <p className={`text-xs ${BRAND_CONFIG.colors.primaryText} font-bold uppercase tracking-wider flex items-center gap-1`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${BRAND_CONFIG.colors.primaryFull}`}></span> Online
-                          </p>
-                        </div>
+                        <button onClick={() => setActiveSessionId(null)} className="lg:hidden p-2 text-slate-400"><ChevronLeft size={24} /></button>
+                        <h4 className="font-bold text-sm text-slate-900">{selectedSession.patient_name}</h4>
                       </div>
-                      <button onClick={handleDeleteSession} className="p-2 text-rose-400 hover:text-rose-600 transition-colors rounded-full hover:bg-rose-50" title="Sil">
-                        <LogOut size={20} />
-                      </button>
+                      <button onClick={handleDeleteSession} className="p-2 text-rose-400 hover:text-rose-600"><LogOut size={20} /></button>
                     </div>
-
                     <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-                      {messages.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                          <MessageSquare size={32} className="mb-2 opacity-50" />
-                          <p className="text-xs font-bold uppercase tracking-wider">Hələ ki, yazışma yoxdur</p>
-                        </div>
-                      ) : (
-                        messages
-                          .filter(msg => {
-                            // Filter out internal thoughts but keep doctor messages
-                            const isInternalThought = msg.text.startsWith('**') || msg.text.includes('Crafting Initial Response');
-                            return !isInternalThought;
-                          })
-                          .map((msg) => (
-                            <div key={msg.id} className={`flex ${msg.speaker === Speaker.Agent || msg.speaker === Speaker.Doctor || msg.speaker === 'doctor' ? 'justify-end' : 'justify-start'
-                              }`}>
-                              <div className={`max-w-[70%] p-4 rounded-2xl shadow-sm border relative group/msg ${msg.speaker === Speaker.Agent
-                                ? 'bg-emerald-500 text-white rounded-tr-none shadow-emerald-500/20 border-emerald-500'
-                                : msg.speaker === Speaker.Doctor || msg.speaker === 'doctor'
-                                  ? 'bg-blue-500 text-white rounded-tr-none shadow-blue-500/20 border-blue-500'
-                                  : 'bg-white text-slate-700 rounded-tl-none border-slate-100'
-                                }`}>
-                                {/* Message Delete Button */}
-                                {msg.id && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteMessage(msg.id!);
-                                    }}
-                                    className={`absolute -top-2 -right-2 p-1 rounded-full bg-white shadow-md border border-slate-100 text-rose-500 opacity-0 group-hover/msg:opacity-100 transition-opacity z-10 hover:bg-rose-50`}
-                                    title="Mesajı sil"
-                                  >
-                                    <X size={12} />
-                                  </button>
-                                )}
+                      {messages.map((msg) => {
+                        const isUser = msg.speaker.toLowerCase() === 'user';
+                        const isAgent = msg.speaker.toLowerCase() === 'agent';
+                        const isDoctor = msg.speaker.toLowerCase() === 'doctor';
 
-                                {(msg.speaker === Speaker.Doctor || msg.speaker === 'doctor') && (
-                                  <p className="text-[10px] font-bold mb-1 opacity-70 uppercase">Həkim</p>
-                                )}
-                                <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
-                                <span className={`text-[10px] font-bold mt-2 block ${msg.speaker === Speaker.Agent ? 'text-emerald-100/70 text-right' :
-                                  msg.speaker === Speaker.Doctor || msg.speaker === 'doctor' ? 'text-blue-100/70 text-right' :
-                                    'text-slate-300'
-                                  }`}>
-                                  {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' }) : ''}
-                                </span>
-                              </div>
+                        return (
+                          <div key={msg.id} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>
+                            <div className={`max-w-[70%] p-4 rounded-2xl shadow-sm border relative group/msg ${isUser
+                                ? 'bg-white text-slate-700 rounded-tl-none border-slate-100'
+                                : isAgent
+                                  ? 'bg-emerald-500 text-white rounded-tr-none shadow-emerald-500/20 border-emerald-500'
+                                  : 'bg-blue-500 text-white rounded-tr-none shadow-blue-500/20 border-blue-500'
+                              }`}>
+                              {isDoctor && (
+                                <p className="text-[10px] font-bold mb-1 opacity-70 uppercase tracking-tighter">Həkim</p>
+                              )}
+                              {isAgent && (
+                                <p className="text-[10px] font-bold mb-1 opacity-70 uppercase tracking-tighter">AI Asistent</p>
+                              )}
+                              <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
+                              <span className={`text-[10px] mt-2 block opacity-50 ${isUser ? 'text-slate-400' : 'text-white text-right'}`}>
+                                {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' }) : ''}
+                              </span>
                             </div>
-                          ))
-                      )}
+                          </div>
+                        );
+                      })}
                       <div ref={messagesEndRef} />
                     </div>
-
-                    {/* Doctor Input */}
                     <div className="px-8 py-4 bg-white border-t border-slate-100 shrink-0">
                       <div className="flex gap-3">
                         <input
@@ -756,25 +618,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                           onChange={(e) => setDoctorMessage(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && handleSendDoctorMessage()}
                           placeholder="Həkim olaraq mesaj yazın..."
-                          className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm"
                         />
-                        <button
-                          onClick={handleSendDoctorMessage}
-                          disabled={!doctorMessage.trim()}
-                          className="px-6 py-3 bg-blue-500 text-white rounded-xl font-bold text-sm hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                        >
-                          <Send size={16} />
-                          Göndər
-                        </button>
+                        <button onClick={handleSendDoctorMessage} className="px-6 py-3 bg-blue-500 text-white rounded-xl font-bold text-sm">Göndər</button>
                       </div>
                     </div>
                   </>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center opacity-40">
-                    <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
-                      <MessageCircle size={40} className="text-slate-400" />
-                    </div>
-                    <p className="font-bold text-slate-500 uppercase tracking-widest text-sm">Soldan bir söhbət seçin</p>
+                  <div className="flex-1 flex items-center justify-center opacity-40">
+                    <p className="font-bold text-slate-500 uppercase tracking-widest text-sm">Söhbət seçin</p>
                   </div>
                 )}
               </div>
@@ -783,7 +635,6 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </main>
 
-      {/* Confirm Modal */}
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}

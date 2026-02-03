@@ -1,0 +1,141 @@
+[1mdiff --git a/components/LiveVoiceSession.tsx b/components/LiveVoiceSession.tsx[m
+[1mindex e042e13..1b879c9 100644[m
+[1m--- a/components/LiveVoiceSession.tsx[m
+[1m+++ b/components/LiveVoiceSession.tsx[m
+[36m@@ -31,7 +31,7 @@[m [mconst LiveVoiceSession: React.FC<Props> = ({ onAppointmentBooked, isOpen, onClos[m
+     return localStorage.getItem(SESSION_STORAGE_KEY);[m
+   });[m
+   const [isMobile, setIsMobile] = useState(false);[m
+[31m-  const [firebaseMessages, setFirebaseMessages] = useState<ChatMessage[]>([]);[m
+[32m+[m[32m  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);[m
+ [m
+   // Text mode states[m
+   const [textInput, setTextInput] = useState('');[m
+[36m@@ -62,7 +62,11 @@[m [mconst LiveVoiceSession: React.FC<Props> = ({ onAppointmentBooked, isOpen, onClos[m
+       if (isConnected) {[m
+         disconnectSession();[m
+       }[m
+[31m-      // Don't clear sessionId - keep it for next time[m
+[32m+[m[32m      // RESET Session: Clear session ID so next time it starts fresh[m
+[32m+[m[32m      setSessionId(null);[m
+[32m+[m[32m      localStorage.removeItem(SESSION_STORAGE_KEY);[m
+[32m+[m[32m      setChatMessages([]);[m
+[32m+[m[32m      setTextMessages([]);[m
+     }[m
+ [m
+     const checkMobile = () => setIsMobile(window.innerWidth < 640);[m
+[36m@@ -76,12 +80,12 @@[m [mconst LiveVoiceSession: React.FC<Props> = ({ onAppointmentBooked, isOpen, onClos[m
+     };[m
+   }, [isOpen]); // Re-run when isOpen changes[m
+ [m
+[31m-  // Subscribe to Firebase messages when session exists[m
+[32m+[m[32m  // Subscribe to Chat messages when session exists[m
+   useEffect(() => {[m
+     if (!sessionId) return;[m
+ [m
+     const unsubscribe = ChatService.subscribeToSessionMessages(sessionId, (messages) => {[m
+[31m-      setFirebaseMessages(messages);[m
+[32m+[m[32m      setChatMessages(messages);[m
+     });[m
+ [m
+     return () => {[m
+[36m@@ -149,9 +153,9 @@[m [mconst LiveVoiceSession: React.FC<Props> = ({ onAppointmentBooked, isOpen, onClos[m
+       const int16 = new Int16Array(buffer);[m
+       audioQueueRef.current.push(int16);[m
+ [m
+[31m-      // Buffer approach: Wait for at least 3 chunks before starting/resuming[m
+[31m-      // This adds slight latency but prevents choppy audio/silence gaps[m
+[31m-      if (!isPlayingRef.current && audioQueueRef.current.length >= 3) {[m
+[32m+[m[32m      // Buffer approach: Start playing immediately when we have at least 1 chunk[m
+[32m+[m[32m      // Lower latency preferred over potential jitter[m
+[32m+[m[32m      if (!isPlayingRef.current && audioQueueRef.current.length >= 1) {[m
+         playNextAudioChunk();[m
+       }[m
+     } catch (e) {[m
+[36m@@ -313,7 +317,7 @@[m [mconst LiveVoiceSession: React.FC<Props> = ({ onAppointmentBooked, isOpen, onClos[m
+     try {[m
+       const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);[m
+       const model = genAI.getGenerativeModel({[m
+[31m-        model: 'gemini-2.5-flash',[m
+[32m+[m[32m        model: 'gemini-2.0-flash',[m
+         systemInstruction: `Siz "${BRAND_CONFIG.name}" premium stomatologiya klinikasının peşəkar operatorusunuz. [m
+ Adınız Stom AI-dır.[m
+ Sizin ana diliniz Azərbaycan dilidir. Çox səlis, təmiz və səmimi Azərbaycan dilində danışırsınız.[m
+[36m@@ -334,7 +338,7 @@[m [mMəsələn, əgər "dişim ağrıyır" desələr, siz "Çox təəssüf edirəm.[m
+           functionDeclarations: [[m
+             {[m
+               name: 'check_calendar_availability',[m
+[31m-              description: 'Müştəri randevu vaxtı soruşanda istifadə edin',[m
+[32m+[m[32m              description: 'MÜTLƏQ: Müştəri vaxt soruşanda İLK NÖVBƏDƏ bu aləti işlədin. Təqvimə baxmadan HEÇ VAXT "bəli" deməyin.',[m
+               parameters: {[m
+                 type: 'OBJECT' as any,[m
+                 properties: {[m
+[36m@@ -490,9 +494,9 @@[m [mMəsələn, əgər "dişim ağrıyır" desələr, siz "Çox təəssüf edirəm.[m
+         // Send Initial Setup[m
+         const setupMessage = {[m
+           setup: {[m
+[31m-            model: "models/gemini-2.5-flash-native-audio-preview-12-2025",[m
+[32m+[m[32m            model: "models/gemini-2.0-flash",[m
+             generation_config: {[m
+[31m-              response_modalities: ["AUDIO"],[m
+[32m+[m[32m              response_modalities: ["AUDIO", "TEXT"],[m
+               speech_config: {[m
+                 voice_config: { prebuilt_voice_config: { voice_name: "Kore" } }[m
+               }[m
+[36m@@ -510,6 +514,16 @@[m [mVacib qaydalar:[m
+ 2. Səs tonunuz mehriban, qayğıkeş və peşəkar olmalıdır. Robot kimi yox, canlı insan kimi danışın.[m
+ 3. Sözləri düzgün tələffüz edin. Cümlələr arasında təbii pauzalar verin.[m
+ 4. Müştəriyə "Siz" deyə müraciət edin.[m
+[32m+[m[32m⚠️ KRİTİK TEXNİKİ TƏLƏB - FAKE BOOKING QADAĞANDIR:[m
+[32m+[m[32m- Müştəri randevunu təsdiqləyən kimi (məsələn: "bəli yazın", "oldu", "razıyam"), SİZ DƏRHAL book_appointment FUNKSİYASINI ÇAĞIRMALISINIZ.[m
+[32m+[m[32m- QƏTİYYƏN funksiyanı çağırmadan "Qeydə aldım", "Yazdım", "Təsdiqləndi" kimi sözlər DEMƏYİN. Bu YALANDIR.[m
+[32m+[m[32m- Əgər funksiyanı çağırmamısınızsa, deməli randevu hələ YOXDUR.[m
+[32m+[m[32m- Yalnız və yalnız book_appointment aləti işə düşəndən sonra müştəriyə "Randevunuz qeydə alındı" deyin.[m
+[32m+[m
+[32m+[m[32m6. Təbiilik və Sürət:[m
+[32m+[m[32m   - Düşünmək üçün vaxt lazım olanda tam səssiz qalmayın.[m
+[32m+[m[32m   - "Bir saniyə, baxıram...", "Aha, aydındır...", "Gəlin yoxlayaq..." kimi qısa keçid ifadələri (filler words) istifadə edin.[m
+[32m+[m[32m   - Xüsusilə təqvimə baxmazdan əvvəl "İndi sistemdə yoxlayıram..." deyin.[m
+ [m
+ ${NATURAL_OPERATOR_INSTRUCTION}[m
+ [m
+[36m@@ -520,7 +534,7 @@[m [mBugün: ${new Date().toLocaleString('az-AZ')}[m
+               function_declarations: [[m
+                 {[m
+                   name: 'check_calendar_availability',[m
+[31m-                  description: 'Check availability. Use this when user asks about time.',[m
+[32m+[m[32m                  description: 'CRITICAL: You MUST use this tool to check availability BEFORE saying yes. Do NOT guess.',[m
+                   parameters: {[m
+                     type: 'OBJECT',[m
+                     properties: {[m
+[36m@@ -587,11 +601,14 @@[m [mBugün: ${new Date().toLocaleString('az-AZ')}[m
+             /^\s*Thinking/i.test(text) ||[m
+             /Defining the Stom AI persona/i.test(text);[m
+ [m
+[32m+[m
+           if (!isInternalThought) {[m
+[31m-            const sid = await ensureSession();[m
+[31m-            if (sid) {[m
+[31m-              await ChatService.saveMessage(sid, Speaker.Agent, text);[m
+[31m-            }[m
+[32m+[m[32m            // VOICE MODE: Do NOT save agent transcripts to DB per user request[m
+[32m+[m[32m            // const sid = await ensureSession();[m
+[32m+[m[32m            // if (sid) {[m
+[32m+[m[32m            //   await ChatService.saveMessage(sid, Speaker.Agent, text);[m
+[32m+[m[32m            // }[m
+[32m+[m[32m            console.log("🗣️ Agent said (Voice Mode):", text);[m
+           } else {[m
+             console.log("🚫 Filtered internal thought:", text);[m
+           }[m
+[36m@@ -681,10 +698,11 @@[m [mBugün: ${new Date().toLocaleString('az-AZ')}[m
+         const transcript = event.results[event.results.length - 1][0].transcript;[m
+         if (transcript.trim()) {[m
+           console.log("🎤 User said:", transcript);[m
+[31m-          const sid = await ensureSession();[m
+[31m-          if (sid) {[m
+[31m-            await ChatService.saveMessage(sid, Speaker.User, transcript);[m
+[31m-          }[m
+[32m+[m[32m          // VOICE MODE: Do NOT save user transcripts to DB per user request[m
+[32m+[m[32m          // const sid = await ensureSession();[m
+[32m+[m[32m          // if (sid) {[m
+[32m+[m[32m          //   await ChatService.saveMes

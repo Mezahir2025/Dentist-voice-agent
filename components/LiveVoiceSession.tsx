@@ -69,9 +69,24 @@ const LiveVoiceSession: React.FC<Props> = ({ onAppointmentBooked, isOpen, onClos
     checkMobile();
     window.addEventListener('resize', checkMobile);
 
+    // Prevent disconnection when switching tabs - resume AudioContext
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && audioContextRef.current) {
+        if (audioContextRef.current.state === 'suspended') {
+          audioContextRef.current.resume().then(() => {
+            console.log('🔊 AudioContext resumed after tab switch');
+          }).catch(err => {
+            console.error('Failed to resume AudioContext:', err);
+          });
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       isComponentMounted.current = false;
       window.removeEventListener('resize', checkMobile);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       disconnectSession();
     };
   }, [isOpen]); // Re-run when isOpen changes
@@ -88,6 +103,13 @@ const LiveVoiceSession: React.FC<Props> = ({ onAppointmentBooked, isOpen, onClos
       unsubscribe();
     };
   }, [sessionId]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [firebaseMessages, textMessages, isTextLoading]);
 
   // 2. Audio Playback Engine
   const playNextAudioChunk = useCallback(() => {
@@ -588,10 +610,12 @@ Bugün: ${new Date().toLocaleString('az-AZ')}
             /Defining the Stom AI persona/i.test(text);
 
           if (!isInternalThought) {
-            const sid = await ensureSession();
-            if (sid) {
-              await ChatService.saveMessage(sid, Speaker.Agent, text);
-            }
+            // VOICE MODE: Transcription disabled (inaccurate for Azerbaijani)
+            // const sid = await ensureSession();
+            // if (sid) {
+            //   await ChatService.saveMessage(sid, Speaker.Agent, text);
+            // }
+            console.log("🗣️ Agent said (Voice Mode):", text);
           } else {
             console.log("🚫 Filtered internal thought:", text);
           }
@@ -681,10 +705,11 @@ Bugün: ${new Date().toLocaleString('az-AZ')}
         const transcript = event.results[event.results.length - 1][0].transcript;
         if (transcript.trim()) {
           console.log("🎤 User said:", transcript);
-          const sid = await ensureSession();
-          if (sid) {
-            await ChatService.saveMessage(sid, Speaker.User, transcript);
-          }
+          // VOICE MODE: Transcription disabled (inaccurate for Azerbaijani)
+          // const sid = await ensureSession();
+          // if (sid) {
+          //   await ChatService.saveMessage(sid, Speaker.User, transcript);
+          // }
         }
       };
 
@@ -795,7 +820,7 @@ Bugün: ${new Date().toLocaleString('az-AZ')}
           // TEXT CHAT MODE
           <div className="flex-1 flex flex-col bg-navy-900 overflow-hidden">
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
               {(() => {
                 // Merge Firebase messages with local text messages
                 const allMessages: Array<{ role: 'user' | 'assistant' | 'doctor', text: string, timestamp?: number, isLocal?: boolean }> = [];

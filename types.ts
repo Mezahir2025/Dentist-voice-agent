@@ -1,8 +1,8 @@
 
 export interface Appointment {
   id: string;
-  patientName: string;
-  phoneNumber: string;
+  patient_name: string;
+  phone: string;
   date: string;
   time: string;
   reason: string;
