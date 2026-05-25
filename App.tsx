@@ -15,6 +15,7 @@ import LiveVoiceSession from './components/LiveVoiceSession';
 import Auth from './components/Auth';
 import Dashboard from './components/Dashboard';
 import LandingPage from './components/LandingPage';
+import ClinicWebsiteTemplate from './components/ClinicWebsiteTemplate';
 import ManualAppointmentModal from './components/ManualAppointmentModal';
 import { BRAND_CONFIG } from './brandConfig';
 
@@ -165,6 +166,12 @@ const App: React.FC = () => {
     setNotification({ message: 'Bütün randevular silindi!', type: 'success' });
     setTimeout(() => setNotification(null), 3000);
   };
+
+  // Clinic website template view
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('view') === 'clinic') {
+    return <ClinicWebsiteTemplate onOpenAuth={() => {}} onOpenWidget={() => {}} />;
+  }
 
   if (authLoading) {
     return (
