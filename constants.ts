@@ -46,5 +46,5 @@ export const APP_CONFIG = {
   CONVERSATION_MODEL: 'gemini-2.5-flash-native-audio-preview-12-2025',
   TEXT_MODEL: 'gemini-2.5-flash',
   TTS_MODEL: 'gemini-2.5-flash-native-audio-preview-12-2025',
-  N8N_WEBHOOK_URL: 'https://ethicandagentic.app.n8n.cloud/webhook/dental-appointment'
+  N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n-dentist.duckdns.org/webhook/dental-appointment'
 };
